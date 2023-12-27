@@ -1,2 +1,2 @@
 # mql
-mql programing2
+mql programing
