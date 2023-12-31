@@ -39,9 +39,26 @@ void OnTick()
       double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID),_Digits);
       //trade.Buy(0.1, Symbol(), Ask,0,Ask + 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
       //trade.Sell(0.1, Symbol(), Bid,0,Bid - 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
-      trade.BuyStop(0.1, Ask + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),0,
-      Ask + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,"test");
-      //trade.SellStop(0.1, Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),0,0,0,0,"test");
+      //trade.BuyStop(
+      //   0.1,
+      //   Ask + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),
+      //   0,
+      //   Ask + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + 70 * SymbolInfoDouble(Symbol(),
+      //         SYMBOL_POINT),
+      //   0,
+      //   0,
+      //   "test"
+      //);
+      trade.SellStop(
+         0.1,
+         Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),
+         Symbol(),
+         0,
+         Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - 70 * SymbolInfoDouble(Symbol(),SYMBOL_POINT),
+         0,
+         0,
+         "test"
+      );
       //trade.BuyLimit(0.1,Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,0,0,0,"test");
       //trade.SellLimit(0.1,Ask + 0.02 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,0,0,0,"test");
       doesHaveOrder = true;
@@ -127,73 +144,86 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
 //      " ORDER_TIME_SPECIFIED_DAY:",ORDER_TIME_SPECIFIED_DAY
 //   );
 //
-   Print(" trans.type:",trans.type," trans.deal:",trans.deal," trans.deal_type:",trans.deal_type,
-         " trans.order:",trans.order," trans.order_state:",trans.order_state,
-         " trans.order_type:",trans.order_type," trans.position:",trans.position,
-         " trans.position_by:",trans.position_by," trans.price:",trans.price,
-         " trans.price_sl:",trans.price_sl," trans.price_tp:",trans.price_tp,
-         " trans.price_trigger:",trans.price_trigger," trans.symbol:",trans.symbol,
-         " trans.time_expiratio:",trans.time_expiration," trans.time_type:",trans.time_type,
-         " trans.volume:",trans.volume);
    Print(
-      " request.action:",request.action,
-      " request.comment,:",request.comment,
-      " request.deviation:",request.deviation,
-      " request.expiration:",request.expiration,
-      " request.magic:",request.magic,
-      " request.order:",request.order,
-      " request.position:",request.position,
-      " request.position_by:",request.position_by,
-      " request.price:",request.price,
-      " request.sl:",request.sl,
-      " request.tp:",request.tp,
-      " request.type:",request.type,
-      " request.stoplimit:",request.stoplimit,
-      " request.type_filling:",request.type_filling,
-      " request.type_time:",request.type_time,
-      " request.volume:",request.volume
+      " trans.type:",trans.type,
+      " trans.deal:",trans.deal,
+      " trans.deal_type:",trans.deal_type,
+      " trans.order:",trans.order,
+      " trans.order_state:",trans.order_state,
+      " trans.order_type:",trans.order_type,
+      " trans.position:",trans.position,
+      " trans.position_by:",trans.position_by,
+      " trans.price:",trans.price,
+      " trans.price_trigger:",trans.price_trigger,
+      " trans.price_sl:",trans.price_sl,
+      " trans.price_tp:",trans.price_tp,
+      " trans.price_trigger:",trans.price_trigger,
+      " trans.symbol:",trans.symbol,
+      " trans.time_expiratio:",trans.time_expiration,
+      " trans.time_type:",trans.time_type,
+      " trans.volume:",trans.volume
    );
-   Print(
-      " result.ask:",result.ask,
-      " result.bid:",result.bid,
-      " result.comment:",result.comment,
-      " result.deal:",result.deal,
-      " result.order:",result.order,
-      " result.price:",result.price,
-      " result.request_id:",result.request_id,
-      " result.retcode:",result.retcode,
-      " result.retcode_external:",result.retcode_external,
-      " result.volume:",result.volume
-   );
+   //Print(
+   //   " request.action:",request.action,
+   //   " request.comment,:",request.comment,
+   //   " request.deviation:",request.deviation,
+   //   " request.expiration:",request.expiration,
+   //   " request.magic:",request.magic,
+   //   " request.order:",request.order,
+   //   " request.position:",request.position,
+   //   " request.position_by:",request.position_by,
+   //   " request.price:",request.price,
+   //   " request.sl:",request.sl,
+   //   " request.tp:",request.tp,
+   //   " request.type:",request.type,
+   //   " request.stoplimit:",request.stoplimit,
+   //   " request.type_filling:",request.type_filling,
+   //   " request.type_time:",request.type_time,
+   //   " request.volume:",request.volume
+   //);
+   //Print(
+   //   " result.ask:",result.ask,
+   //   " result.bid:",result.bid,
+   //   " result.comment:",result.comment,
+   //   " result.deal:",result.deal,
+   //   " result.order:",result.order,
+   //   " result.price:",result.price,
+   //   " result.request_id:",result.request_id,
+   //   " result.retcode:",result.retcode,
+   //   " result.retcode_external:",result.retcode_external,
+   //   " result.volume:",result.volume
+   //);
+   Print(" OrderSelect(trans.position):",OrderSelect(trans.position)," OrderGetInteger(ORDER_TYPE):",OrderGetInteger(ORDER_TYPE));
+
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order == trans.position)
    {
-      Print("BUY"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
+      Print("BUY"," trans.order:",trans.position," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order != trans.position)
+   else if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order != trans.position)
    {
-      Print("End A Sell Position"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
+      Print("End A Sell Position"," trans.order:",trans.position," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
+   else if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
    {
-      Print("SELL"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
+      Print("SELL"," trans.order:",trans.position," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)
+   else if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)
    {
-      Print("End A Buy Position"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
+      Print("End A Buy Position"," trans.order:",trans.position," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_LIMIT)
+   else if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_LIMIT)
    {
       Print("BUY_LIMIT"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_LIMIT)
+   else if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_LIMIT)
    {
       Print("SELL_LIMIT"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_STOP)
+   else if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_STOP)
    {
       Print("BUY_STOP"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_STOP)
+   else if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_STOP)
    {
       Print("SELL_STOP"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
