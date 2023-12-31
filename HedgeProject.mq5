@@ -15,7 +15,7 @@ string query;
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   CreateDatabaseAndTable();
+   CreateDatabaseAndTable(); 
    return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+

@@ -37,9 +37,10 @@ void OnTick()
    {
       double Ask = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK),_Digits);
       double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID),_Digits);
-      trade.Buy(0.1, Symbol(), Ask,0,Ask + 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
-      trade.Sell(0.1, Symbol(), Bid,0,Bid - 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
-      //trade.BuyStop(0.1, Ask + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),0,0,0,0,"test");
+      //trade.Buy(0.1, Symbol(), Ask,0,Ask + 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
+      //trade.Sell(0.1, Symbol(), Bid,0,Bid - 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
+      trade.BuyStop(0.1, Ask + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),0,
+      Ask + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,"test");
       //trade.SellStop(0.1, Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),0,0,0,0,"test");
       //trade.BuyLimit(0.1,Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,0,0,0,"test");
       //trade.SellLimit(0.1,Ask + 0.02 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,0,0,0,"test");
@@ -164,13 +165,21 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       " result.retcode_external:",result.retcode_external,
       " result.volume:",result.volume
    );
-   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY)
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order == trans.position)
    {
       Print("BUY"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL)
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order != trans.position)
+   {
+      Print("End A Sell Position"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
+   }
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
    {
       Print("SELL"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
+   }
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)
+   {
+      Print("End A Buy Position"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
    if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_LIMIT)
    {
