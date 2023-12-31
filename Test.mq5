@@ -39,26 +39,26 @@ void OnTick()
       double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID),_Digits);
       //trade.Buy(0.1, Symbol(), Ask,0,Ask + 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
       //trade.Sell(0.1, Symbol(), Bid,0,Bid - 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
-      //trade.BuyStop(
-      //   0.1,
-      //   Ask + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),
-      //   0,
-      //   Ask + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + 70 * SymbolInfoDouble(Symbol(),
-      //         SYMBOL_POINT),
-      //   0,
-      //   0,
-      //   "test"
-      //);
-      trade.SellStop(
+      trade.BuyStop(
          0.1,
-         Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),
-         Symbol(),
+         Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),
          0,
-         Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - 70 * SymbolInfoDouble(Symbol(),SYMBOL_POINT),
+         Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + 1 * SymbolInfoDouble(Symbol(),
+               SYMBOL_POINT),
          0,
          0,
          "test"
       );
+      //trade.SellStop(
+      //   0.1,
+      //   Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),
+      //   Symbol(),
+      //   0,
+      //   Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - 70 * SymbolInfoDouble(Symbol(),SYMBOL_POINT),
+      //   0,
+      //   0,
+      //   "test"
+      //);
       //trade.BuyLimit(0.1,Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,0,0,0,"test");
       //trade.SellLimit(0.1,Ask + 0.02 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,0,0,0,"test");
       doesHaveOrder = true;
@@ -71,6 +71,7 @@ void OnTick()
 void OnTrade()
 {
 //---
+   Print(" OrderSelect(trans.position):",OrderSelect(2)," OrderGetInteger(ORDER_TYPE):",OrderGetInteger(ORDER_TYPE));
 
 }
 
@@ -154,7 +155,6 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       " trans.position:",trans.position,
       " trans.position_by:",trans.position_by,
       " trans.price:",trans.price,
-      " trans.price_trigger:",trans.price_trigger,
       " trans.price_sl:",trans.price_sl,
       " trans.price_tp:",trans.price_tp,
       " trans.price_trigger:",trans.price_trigger,

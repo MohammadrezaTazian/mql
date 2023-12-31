@@ -15,7 +15,7 @@ string query;
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   CreateDatabaseAndTable(); 
+   CreateDatabaseAndTable();
    return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
@@ -77,38 +77,45 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
                         const MqlTradeRequest& request,
                         const MqlTradeResult& result)
 {
-   if(trans.type == TRADE_TRANSACTION_ORDER_DELETE && trans.order_type == ORDER_TYPE_BUY)
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order == trans.position)
    {
-      query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-              "VALUES ('buy'," + IntegerToString(trans.order) + "," + DoubleToString(trans.position_by) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
-      DatabaseDataEntryQuery(query);
+      if(IsOrderBuyStop(trans.position))
+      {
+         //todo Update >> BuyStopToBuy
+      }
+      else
+      {
+         //todo insert Buy
+      }
    }
-   if(trans.type == TRADE_TRANSACTION_ORDER_DELETE && trans.order_type == ORDER_TYPE_SELL)
+   else if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order != trans.position)
    {
-      query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-              "VALUES ('sell'," + IntegerToString(trans.order) + "," + DoubleToString(trans.position_by) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
-      DatabaseDataEntryQuery(query);
+      Print("End A Sell Position"," trans.order:",trans.position," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_STOP)
+   else if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
    {
-      query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-              "VALUES ('buystop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.position_by) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
-      DatabaseDataEntryQuery(query);
+      if(IsOrderSellStop(trans.position))
+      {
+         //todo Update >> SellStopToSell
+      }
+      else
+      {
+         //todo insert Sell
+      }
    }
-   if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_STOP)
+   else if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)
    {
-      query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-              "VALUES ('sellstop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.position_by) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
-      DatabaseDataEntryQuery(query);
+      Print("End A Buy Position"," trans.order:",trans.position," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   if(trans.type == TRADE_TRANSACTION_ORDER_DELETE && trans.order_type == ORDER_TYPE_BUY_STOP)
+   else if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_STOP)
    {
-      Print("BUY_STOP_To_BUY"," tiket: ",trans.order);
+      //todo insert buystop
    }
-   if(trans.type == TRADE_TRANSACTION_ORDER_DELETE && trans.order_type == ORDER_TYPE_SELL_STOP)
+   else if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_STOP)
    {
-      Print("SELL_STOP_To_SELL"," tiket: ",trans.order);
+      //todo insert sellstop
    }
+
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -366,5 +373,21 @@ bool doesExistSellOrderInThisLevel(double orderPrice)
 //--- remove the query after use
    DatabaseFinalize(request);
    return doesExistSellOrder == 1 ? true : false;
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool IsOrderBuyStop(ulong positionId)
+{
+
+   return false;
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool IsOrderSellStop(ulong positionId)
+{
+   return false;
 }
 //+------------------------------------------------------------------+
