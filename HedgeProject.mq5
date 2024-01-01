@@ -39,10 +39,6 @@ void OnTick()
    {
       isFirstBuy = true;
       lastOpenOrderPrice = GetLastOpenOrderPrice();
-      //HaveAlredeayBuyOrder(lastOpenOrderPrice + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT));
-      //HaveAlredeaySellOrder(lastOpenOrderPrice - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT));
-      //trade.SellStop(0.1, lastOpenOrderPrice - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),0,lastOpenOrderPrice - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
-
    }
    if(!doesExistBuyOrderInThisLevel(lastOpenOrderPrice + 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT)))
    {
@@ -81,39 +77,53 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
    {
       if(IsOrderBuyStop(trans.position))
       {
-         //todo Update >> BuyStopToBuy
+         query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+                 "VALUES ('BuyStopToBuy'," + trans.position + "," + trans.price + "," + trans.price_tp + ",1,false,false,false,false);";
+         DatabaseDataEntryQuery(query);
       }
       else
       {
-         //todo insert Buy
+         query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+                 "VALUES ('Buy'," + trans.position + "," + trans.price + "," + trans.price_tp + ",1,false,false,false,true);";
+         DatabaseDataEntryQuery(query);
       }
    }
    else if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order != trans.position)
    {
-      Print("End A Sell Position"," trans.order:",trans.position," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
+      query = "UPDATE tbl_Hedge SET IsOpenedOrder = false WHRER OrderTicket = " + trans.position;
+      DatabaseDataEntryQuery(query);
    }
    else if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
    {
       if(IsOrderSellStop(trans.position))
       {
-         //todo Update >> SellStopToSell
+         query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+                 "VALUES ('SellStopToSell'," + trans.position + "," + trans.price + "," + trans.price_tp + ",1,false,false,false,false);";
+         DatabaseDataEntryQuery(query);
       }
       else
       {
-         //todo insert Sell
+         query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+                 "VALUES ('Sell'," + trans.position + "," + trans.price + "," + trans.price_tp + ",1,false,false,false,true);";
+         DatabaseDataEntryQuery(query);
       }
    }
    else if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)
    {
-      Print("End A Buy Position"," trans.order:",trans.position," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
+      query = "UPDATE tbl_Hedge SET IsOpenedOrder = false WHRER OrderTicket = " + trans.position;
+      DatabaseDataEntryQuery(query);
    }
    else if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_STOP)
    {
-      //todo insert buystop
+      query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+              "VALUES ('BuyStop'," + trans.position + "," + trans.price + "," + trans.price_tp + ",1,false,false,false,false);";
+      DatabaseDataEntryQuery(query);
    }
    else if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_STOP)
    {
-      //todo insert sellstop
+      query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+              "VALUES ('SellStop'," + trans.position + "," + trans.price + "," + trans.price_tp + ",1,false,false,false,false);";
+      DatabaseDataEntryQuery(query);
    }
 
 }
@@ -203,21 +213,6 @@ void CreateDatabaseAndTable()
       DatabaseClose(db);
       return;
    }
-   //string query = "INSERT INTO tbl_Hedge (ID,OrderType,IsOrderOpen,IsOrderHedged,IsOrderClosed,OpenPrice,IsLastOrder)"
-   //               "VALUES (1,'buy',false,true,false,1.33,true); "
-   //               "INSERT INTO tbl_Hedge (ID,OrderType,IsOrderOpen,IsOrderHedged,IsOrderClosed,OpenPrice,IsLastOrder)"
-   //               "VALUES (2,'buy',false,true,false,1.343,true); "
-   //               "INSERT INTO tbl_Hedge (ID,OrderType,IsOrderOpen,IsOrderHedged,IsOrderClosed,OpenPrice,IsLastOrder)"
-   //               "VALUES (3,'buy',false,true,false,22.22,true); "
-   //               "INSERT INTO tbl_Hedge (ID,OrderType,IsOrderOpen,IsOrderHedged,IsOrderClosed,OpenPrice,IsLastOrder)"
-   //               "VALUES (4,'sell',false,true,false,22.22,true); ";
-   //if !DatabaseExecute(db,query)
-   //{
-   //   Print("DB: ", filename, " insert failed with code ", GetLastError());
-   //   DatabaseClose(db);
-   //   return;
-   //}
-//--- close the database
    DatabaseClose(db);
 }
 
@@ -292,7 +287,7 @@ double GetLastOpenOrderPrice ()
 bool doesExistBuyOrderInThisLevel(double orderPrice)
 {
    int doesExistBuyOrder = 0;
-   string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OpenedOrderPrice = " + DoubleToString(orderPrice,_Digits) + " AND OrderType = 'buy' AND IsOrderOpen = 0) THEN 1 ELSE 0 End AS doesExistBuyOrder";
+   string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OpenedOrderPrice = " + DoubleToString(orderPrice,_Digits) + " AND OrderType IN ( 'BuyStopToBuy','Buy') AND IsOrderOpen = 1) THEN 1 ELSE 0 End AS doesExistBuyOrder";
    string filename = "Hedgedb.sqlite";
 
 //--- create or open the database in the common terminal folder
@@ -336,7 +331,7 @@ bool doesExistBuyOrderInThisLevel(double orderPrice)
 bool doesExistSellOrderInThisLevel(double orderPrice)
 {
    int doesExistSellOrder = 0;
-   string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OpenedOrderPrice = " + DoubleToString(orderPrice,_Digits) + " AND OrderType = 'sell' AND IsOrderOpen = 0) THEN 1 ELSE 0 End AS doesExistBuyOrder";
+   string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OpenedOrderPrice = " + DoubleToString(orderPrice,_Digits) + " AND OrderType IN ( 'SellStopToSell','Sell') AND IsOrderOpen = 1) THEN 1 ELSE 0 End AS doesExistSellOrder";
    string filename = "Hedgedb.sqlite";
 
 //--- create or open the database in the common terminal folder
@@ -381,13 +376,87 @@ bool doesExistSellOrderInThisLevel(double orderPrice)
 bool IsOrderBuyStop(ulong positionId)
 {
 
-   return false;
+   int isOrderBuyStop = 0;
+   string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OrderType = 'BuyStop' AND IsOrderOpen = 1) THEN 1 ELSE 0 End AS isOrderBuyStop";
+   string filename = "Hedgedb.sqlite";
+
+//--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if(db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return false;
+   }
+//--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if(request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return false;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for(int i = 0; i < DatabaseReadCount; i++)
+   {
+      if(DatabaseColumnInteger(request, 0, isOrderBuyStop ))
+      {
+         return isOrderBuyStop == 1 ? true : false;
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return false;
+      }
+   }
+//--- remove the query after use
+   DatabaseFinalize(request);
+   return isOrderBuyStop == 1 ? true : false;
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 bool IsOrderSellStop(ulong positionId)
 {
-   return false;
+   int isOrderSellStop = 0;
+   string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OrderType = 'BuyStop' AND IsOrderOpen = 1) THEN 1 ELSE 0 End AS isOrderSellStop";
+   string filename = "Hedgedb.sqlite";
+
+//--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if(db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return false;
+   }
+//--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if(request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return false;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for(int i = 0; i < DatabaseReadCount; i++)
+   {
+      if(DatabaseColumnInteger(request, 0, isOrderSellStop ))
+      {
+         return isOrderSellStop == 1 ? true : false;
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return false;
+      }
+   }
+//--- remove the query after use
+   DatabaseFinalize(request);
+   return isOrderSellStop == 1 ? true : false;
 }
 //+------------------------------------------------------------------+
