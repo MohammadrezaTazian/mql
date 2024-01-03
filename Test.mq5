@@ -39,29 +39,29 @@ void OnTick()
       double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID),_Digits);
       //trade.Buy(0.1, Symbol(), Ask,0,Ask + 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
       //trade.Sell(0.1, Symbol(), Bid,0,Bid - 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
-      trade.BuyStop(
-         0.1,
-         Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),
-         0,
-         Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + 1 * SymbolInfoDouble(Symbol(),
-               SYMBOL_POINT),
-         0,
-         0,
-         "test"
-      );
-      //trade.SellStop(
+      //trade.BuyStop(
       //   0.1,
-      //   Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),
-      //   Symbol(),
+      //   Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),
       //   0,
-      //   Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - 70 * SymbolInfoDouble(Symbol(),SYMBOL_POINT),
+      //   Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + 1 * SymbolInfoDouble(Symbol(),
+      //         SYMBOL_POINT),
       //   0,
       //   0,
       //   "test"
       //);
+      trade.SellStop(
+         0.1,
+         Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),
+         Symbol(),
+         0,
+         Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - 70 * SymbolInfoDouble(Symbol(),SYMBOL_POINT),
+         0,
+         0,
+         "test"
+      );
       //trade.BuyLimit(0.1,Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,0,0,0,"test");
       //trade.SellLimit(0.1,Ask + 0.02 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,0,0,0,"test");
-      doesHaveOrder = true;
+      
    }
 
 }
@@ -82,6 +82,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
                         const MqlTradeRequest& request,
                         const MqlTradeResult& result)
 {
+doesHaveOrder = true;
 //   Print(
 //      "TRADE_TRANSACTION_ORDER_ADD:",TRADE_TRANSACTION_ORDER_ADD,
 //      " TRADE_TRANSACTION_ORDER_UPDATE:",TRADE_TRANSACTION_ORDER_UPDATE,
@@ -163,36 +164,36 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       " trans.time_type:",trans.time_type,
       " trans.volume:",trans.volume
    );
-   //Print(
-   //   " request.action:",request.action,
-   //   " request.comment,:",request.comment,
-   //   " request.deviation:",request.deviation,
-   //   " request.expiration:",request.expiration,
-   //   " request.magic:",request.magic,
-   //   " request.order:",request.order,
-   //   " request.position:",request.position,
-   //   " request.position_by:",request.position_by,
-   //   " request.price:",request.price,
-   //   " request.sl:",request.sl,
-   //   " request.tp:",request.tp,
-   //   " request.type:",request.type,
-   //   " request.stoplimit:",request.stoplimit,
-   //   " request.type_filling:",request.type_filling,
-   //   " request.type_time:",request.type_time,
-   //   " request.volume:",request.volume
-   //);
-   //Print(
-   //   " result.ask:",result.ask,
-   //   " result.bid:",result.bid,
-   //   " result.comment:",result.comment,
-   //   " result.deal:",result.deal,
-   //   " result.order:",result.order,
-   //   " result.price:",result.price,
-   //   " result.request_id:",result.request_id,
-   //   " result.retcode:",result.retcode,
-   //   " result.retcode_external:",result.retcode_external,
-   //   " result.volume:",result.volume
-   //);
+   Print(
+      " request.action:",request.action,
+      " request.comment,:",request.comment,
+      " request.deviation:",request.deviation,
+      " request.expiration:",request.expiration,
+      " request.magic:",request.magic,
+      " request.order:",request.order,
+      " request.position:",request.position,
+      " request.position_by:",request.position_by,
+      " request.price:",request.price,
+      " request.sl:",request.sl,
+      " request.tp:",request.tp,
+      " request.type:",request.type,
+      " request.stoplimit:",request.stoplimit,
+      " request.type_filling:",request.type_filling,
+      " request.type_time:",request.type_time,
+      " request.volume:",request.volume
+   );
+   Print(
+      " result.ask:",result.ask,
+      " result.bid:",result.bid,
+      " result.comment:",result.comment,
+      " result.deal:",result.deal,
+      " result.order:",result.order,
+      " result.price:",result.price,
+      " result.request_id:",result.request_id,
+      " result.retcode:",result.retcode,
+      " result.retcode_external:",result.retcode_external,
+      " result.volume:",result.volume
+   );
    Print(" OrderSelect(trans.position):",OrderSelect(trans.position)," OrderGetInteger(ORDER_TYPE):",OrderGetInteger(ORDER_TYPE));
 
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order == trans.position)
