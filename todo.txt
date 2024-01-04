@@ -1,0 +1,1 @@
+1- SellStop Order does not Opend in exact Price that determice in sellstop method 
