@@ -6,8 +6,8 @@
 #property copyright "Copyright 2023, MetaQuotes Ltd."
 #property link      "https://www.mql5.com"
 #property version   "1.00"
-#include<Trade/trade.mqh>
-CTrade trade;
+#include<Trade/Customtrade.mqh>
+CustomCTrade trade;
 bool doesHaveOrder = false;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -37,31 +37,35 @@ void OnTick()
    {
       double Ask = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK),_Digits);
       double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID),_Digits);
+      trade.SetTypeFilling(ORDER_FILLING_RETURN);
       //trade.Buy(0.1, Symbol(), Ask,0,Ask + 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
+      Print("trade.RequestTypeFillingDescription():",trade.RequestTypeFillingDescription());
+      Print("SymbolInfoInteger(symbol,SYMBOL_FILLING_MODE):",SymbolInfoInteger(Symbol(),SYMBOL_FILLING_MODE));
       //trade.Sell(0.1, Symbol(), Bid,0,Bid - 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
-      //trade.BuyStop(
+      trade.BuyStop(
+         0.1,
+         Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),
+         0,
+         Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + 1 * SymbolInfoDouble(Symbol(),
+               SYMBOL_POINT),
+         0,
+         0,
+         "test",
+         ORDER_FILLING_BOC
+      );
+      //trade.SellStop(
       //   0.1,
-      //   Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),
+      //   Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),
+      //   Symbol(),
       //   0,
-      //   Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + 1 * SymbolInfoDouble(Symbol(),
-      //         SYMBOL_POINT),
+      //   Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - 70 * SymbolInfoDouble(Symbol(),SYMBOL_POINT),
       //   0,
       //   0,
       //   "test"
       //);
-      trade.SellStop(
-         0.1,
-         Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),
-         Symbol(),
-         0,
-         Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - 70 * SymbolInfoDouble(Symbol(),SYMBOL_POINT),
-         0,
-         0,
-         "test"
-      );
       //trade.BuyLimit(0.1,Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,0,0,0,"test");
       //trade.SellLimit(0.1,Ask + 0.02 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,0,0,0,"test");
-      
+      doesHaveOrder = true;
    }
 
 }
@@ -70,19 +74,18 @@ void OnTick()
 //+------------------------------------------------------------------+
 void OnTrade()
 {
-//---
-   Print(" OrderSelect(trans.position):",OrderSelect(2)," OrderGetInteger(ORDER_TYPE):",OrderGetInteger(ORDER_TYPE));
+
 
 }
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void OnTradeTransaction(const MqlTradeTransaction& trans,
-                        const MqlTradeRequest& request,
-                        const MqlTradeResult& result)
+void OnTradeTransaction1(const MqlTradeTransaction& trans,
+                         const MqlTradeRequest& request,
+                         const MqlTradeResult& result)
 {
-doesHaveOrder = true;
+   doesHaveOrder = true;
 //   Print(
 //      "TRADE_TRANSACTION_ORDER_ADD:",TRADE_TRANSACTION_ORDER_ADD,
 //      " TRADE_TRANSACTION_ORDER_UPDATE:",TRADE_TRANSACTION_ORDER_UPDATE,
@@ -147,6 +150,17 @@ doesHaveOrder = true;
 //   );
 //
    Print(
+      " SYMBOL_FILLING_FOK:",SYMBOL_FILLING_FOK,
+      " SYMBOL_FILLING_IOC:",SYMBOL_FILLING_IOC,
+      " SYMBOL_FILLING_MODE:",SYMBOL_FILLING_MODE
+   );
+   Print(
+      " ORDER_FILLING_FOK:",ORDER_FILLING_FOK,
+      " ORDER_FILLING_IOC:",ORDER_FILLING_IOC,
+      " ORDER_FILLING_BOC:",ORDER_FILLING_BOC,
+      " ORDER_FILLING_RETURN:",ORDER_FILLING_RETURN
+   );
+   Print(
       " trans.type:",trans.type,
       " trans.deal:",trans.deal,
       " trans.deal_type:",trans.deal_type,
@@ -194,6 +208,7 @@ doesHaveOrder = true;
       " result.retcode_external:",result.retcode_external,
       " result.volume:",result.volume
    );
+   Print( "(uint)SymbolInfoInteger(symbol,SYMBOL_FILLING_MODE):",SymbolInfoInteger(Symbol(),SYMBOL_FILLING_MODE));
    Print(" OrderSelect(trans.position):",OrderSelect(trans.position)," OrderGetInteger(ORDER_TYPE):",OrderGetInteger(ORDER_TYPE));
 
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order == trans.position)

@@ -6,12 +6,13 @@
 #property copyright "Mohammadreza Tazian"
 #property link      "https://www.mql5.com"
 #property version   "1.00"
-#include<Trade/trade.mqh>
-CTrade   trade;
+#include<Trade/Customtrade.mqh>
+CustomCTrade trade;
 bool     isFirstBuy = false;
 double   tpDistance = 70;
 double   orderDistance = 50;
-double   orderVolume = 0.1;
+double   orderVolume = 0.01;
+ENUM_ORDER_TYPE_FILLING type_filling1 = ORDER_FILLING_FOK;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -34,7 +35,7 @@ void OnDeinit(const int reason)
 void OnTick()
 {
    double Ask = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK),_Digits);
-   if(IsMarketOpen() && !isFirstBuy &&  trade.Buy(orderVolume, Symbol(), Ask,0,Ask + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),NULL))
+   if(IsMarketOpen() && !isFirstBuy &&  trade.Buy(orderVolume, Symbol(), Ask,0,Ask + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),NULL,type_filling1))
    {
       isFirstBuy = true;
    }
@@ -48,27 +49,30 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
 {
    string query;
 
+   
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order == trans.position)
    {
       if(IsOrderBuyStop(trans.position))
       {
          trade.OrderDelete(GetTiketOfOpenedPenddingStop("SellStop"));
 
-         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + trans.position;
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
          DatabaseDataEntryQuery(query);
 
          query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES ('BuyStopToBuy'," + trans.position + "," +  NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",true,false,false,false,true);";
+                 "VALUES ('BuyStopToBuy'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
       }
       else
       {
          query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES ('Buy'," + trans.position + "," +  NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",true,false,false,false,true);";
+                 "VALUES ('Buy'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
       }
-      trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
-      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
+
+      trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
+
+      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
    }
 
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
@@ -77,46 +81,47 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       {
          trade.OrderDelete(GetTiketOfOpenedPenddingStop("BuyStop"));
 
-         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + trans.position;
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
          DatabaseDataEntryQuery(query);
 
          query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES ('SellStopToSell'," + trans.position + "," +  NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",true,false,false,false,true);";
+                 "VALUES ('SellStopToSell'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
       }
       else
       {
          query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES ('Sell'," + trans.position + "," +  NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",true,false,false,false,true);";
+                 "VALUES ('Sell'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
       }
-      trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
-      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
+
+      trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
+      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
    }
-   
+
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)//end buy
    {
-      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + trans.position;
+      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
       DatabaseDataEntryQuery(query);
    }
-   
+
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order != trans.position)//end sell
    {
-      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + trans.position;
+      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
       DatabaseDataEntryQuery(query);
    }
-   
+
    if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_STOP)
    {
       query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-              "VALUES ('BuyStop'," + trans.order + "," + NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",false,false,false,false,false);";
+              "VALUES ('BuyStop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",false,false,false,false,false);";
       DatabaseDataEntryQuery(query);
    }
 
    if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_STOP)
    {
       query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-              "VALUES ('SellStop'," + trans.order + "," + NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",false,false,false,false,false);";
+              "VALUES ('SellStop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",false,false,false,false,false);";
       DatabaseDataEntryQuery(query);
    }
 
