@@ -34,13 +34,9 @@ void OnDeinit(const int reason)
 void OnTick()
 {
    double Ask = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK),_Digits);
-   if(!isFirstBuy &&  trade.Buy(orderVolume, Symbol(), Ask,0,Ask + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),NULL))
+   if(IsMarketOpen() && !isFirstBuy &&  trade.Buy(orderVolume, Symbol(), Ask,0,Ask + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),NULL))
    {
       isFirstBuy = true;
-      trade.BuyStop(orderVolume, Ask + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,Ask + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
-      trade.SellStop(orderVolume, Ask - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,Ask - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
-
-
    }
 }
 //+------------------------------------------------------------------+
@@ -52,24 +48,78 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
 {
    string query;
 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order == trans.position)
    {
       if(IsOrderBuyStop(trans.position))
       {
+         trade.OrderDelete(GetTiketOfOpenedPenddingStop("SellStop"));
+
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + trans.position;
+         DatabaseDataEntryQuery(query);
+
          query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES ('BuyStopToBuy'," + trans.position + "," + trans.price + "," + trans.price_tp + ",1,false,false,false,false);";
+                 "VALUES ('BuyStopToBuy'," + trans.position + "," +  NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
       }
       else
       {
          query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES ('Buy'," + trans.position + "," + trans.price + "," + trans.price_tp + ",1,false,false,false,true);";
+                 "VALUES ('Buy'," + trans.position + "," +  NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
       }
+      trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
+      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
    }
+
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
+   {
+      if(IsOrderSellStop(trans.position))
+      {
+         trade.OrderDelete(GetTiketOfOpenedPenddingStop("BuyStop"));
+
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + trans.position;
+         DatabaseDataEntryQuery(query);
+
+         query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+                 "VALUES ('SellStopToSell'," + trans.position + "," +  NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",true,false,false,false,true);";
+         DatabaseDataEntryQuery(query);
+      }
+      else
+      {
+         query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+                 "VALUES ('Sell'," + trans.position + "," +  NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",true,false,false,false,true);";
+         DatabaseDataEntryQuery(query);
+      }
+      trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
+      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL);
+   }
+   
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)//end buy
+   {
+      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + trans.position;
+      DatabaseDataEntryQuery(query);
+   }
+   
+   if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order != trans.position)//end sell
+   {
+      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + trans.position;
+      DatabaseDataEntryQuery(query);
+   }
+   
+   if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_STOP)
+   {
+      query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+              "VALUES ('BuyStop'," + trans.order + "," + NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",false,false,false,false,false);";
+      DatabaseDataEntryQuery(query);
+   }
+
+   if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_STOP)
+   {
+      query = "INSERT INTO tbl_Hedge (OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+              "VALUES ('SellStop'," + trans.order + "," + NormalizeDouble(trans.price,_Digits) + "," + trans.price_tp + ",false,false,false,false,false);";
+      DatabaseDataEntryQuery(query);
+   }
+
 }
 //+------------------------------------------------------------------+
 void CreateDatabaseAndTable()
@@ -139,7 +189,7 @@ bool IsOrderBuyStop(ulong positionId)
 {
 
    int isOrderBuyStop = 0;
-   string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OrderType = 'BuyStop' AND IsOrderOpen = 1) THEN 1 ELSE 0 End AS isOrderBuyStop";
+   string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OrderType = 'BuyStop' AND IsDeletedOrder = 0) THEN 1 ELSE 0 End AS isOrderBuyStop";
    string filename = "Hedgedb.sqlite";
 
 //--- create or open the database in the common terminal folder
@@ -183,7 +233,7 @@ bool IsOrderBuyStop(ulong positionId)
 bool IsOrderSellStop(ulong positionId)
 {
    int isOrderSellStop = 0;
-   string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OrderType = 'BuyStop' AND IsOrderOpen = 1) THEN 1 ELSE 0 End AS isOrderSellStop";
+   string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OrderType = 'BuyStop' AND IsDeletedOrder = 0) THEN 1 ELSE 0 End AS isOrderSellStop";
    string filename = "Hedgedb.sqlite";
 
 //--- create or open the database in the common terminal folder
@@ -221,4 +271,94 @@ bool IsOrderSellStop(ulong positionId)
    DatabaseFinalize(request);
    return isOrderSellStop == 1 ? true : false;
 }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+int GetTiketOfOpenedPenddingStop(string pendingStopType)
+{
+   int OrderTicket;
+   string currentQuery = "SELECT OrderTicket FROM tbl_Hedge WHERE OrderType = '" + pendingStopType + "' AND IsDeletedOrder = 0";
+   string filename = "Hedgedb.sqlite";
+
+//--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if(db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return false;
+   }
+//--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if(request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return false;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for(int i = 0; i < DatabaseReadCount; i++)
+   {
+      if(DatabaseColumnInteger(request, 0, OrderTicket ))
+      {
+         return OrderTicket;
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return false;
+      }
+   }
+//--- remove the query after use
+   DatabaseFinalize(request);
+   return -2;
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool IsMarketOpen()
+{
+   bool isOpen = false;                                  // by default market is closed
+   MqlDateTime mdtServerTime;                            // declare server time structure variable
+   datetime dtServerDateTime = TimeTradeServer();        // store server time
+   if(!TimeToStruct(dtServerDateTime,                    // is servertime correctly converted to struct?
+                    mdtServerTime))
+   {
+      return(false);                                      // no, return market is closed
+   }
+
+   ENUM_DAY_OF_WEEK today = (ENUM_DAY_OF_WEEK)           // get actual day and cast to enum
+                            mdtServerTime.day_of_week;
+
+   if(today > 0 || today < 6)                            // is today in monday to friday?
+   {
+      datetime dtF;                                       // store trading session begin and end time
+      datetime dtT;                                       // date component is 1970.01.01 (0)
+      datetime dtServerTime = dtServerDateTime % 86400;   // set date to 1970.01.01 (0)
+      if(!SymbolInfoSessionTrade(Symbol(), today,              // do we have values for dtFrom and dtTo?
+                                 0, dtF, dtT))
+      {
+         return(false);                                    // no, return market is closed
+      }
+      switch(today)                                       // check for different trading sessions
+      {
+      case 1:
+         if(dtServerTime >= dtF && dtServerTime <= dtT)  // is server time in 00:05 (300) - 00:00 (86400)
+            isOpen = true;                                // yes, set market is open
+         break;
+      case 5:
+         if(dtServerTime >= dtF && dtServerTime <= dtT)  // is server time in 00:04 (240) - 23:55 (86100)
+            isOpen = true;                                // yes, set market is open
+         break;
+      default:
+         if(dtServerTime >= dtF && dtServerTime <= dtT)  // is server time in 00:04 (240) - 00:00 (86400)
+            isOpen = true;                                // yes, set market is open
+         break;
+      }
+   }
+   return(isOpen);
+}
+
 //+------------------------------------------------------------------+
