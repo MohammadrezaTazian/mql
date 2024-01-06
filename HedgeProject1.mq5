@@ -13,6 +13,7 @@ double   tpDistance = 70;
 double   orderDistance = 50;
 double   orderVolume = 0.01;
 ENUM_ORDER_TYPE_FILLING type_filling1 = ORDER_FILLING_FOK;
+int deviation1 = 0;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -71,7 +72,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       }
 
       trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
-      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,0);
+      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,deviation1);
    }
 
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
@@ -95,7 +96,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       }
 
       trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
-      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,0);
+      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,deviation1);
    }
 
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)//end buy
