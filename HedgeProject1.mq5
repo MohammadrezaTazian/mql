@@ -71,8 +71,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       }
 
       trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
-
-      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
+      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,0);
    }
 
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
@@ -96,7 +95,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       }
 
       trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
-      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
+      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,0);
    }
 
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)//end buy
