@@ -56,23 +56,28 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       if(IsOrderBuyStop(trans.position))
       {
          trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType = 'SellStop'";
+         DatabaseDataEntryQuery(query);
 
          query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
          DatabaseDataEntryQuery(query);
 
+         query = "update tbl_Hedge set IsLastOrder = 0 WHERE IsLastOrder = 1";
+         DatabaseDataEntryQuery(query);
+
          query = "INSERT INTO tbl_Hedge (Level,LevelPrice,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES (" + GetLastOredrLevelByTicket(trans.position) + "," + GetLastOredrLevelPriceByTicket(trans.position) + ",'BuyStopToBuy'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
+                 "VALUES (" + GetLastOrderLevelByTicket(trans.position) + "," + GetLastOrderLevelPriceByTicket(trans.position) + ",'BuyStopToBuy'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
       }
       else
       {
          query = "INSERT INTO tbl_Hedge (Level,LevelPrice,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES (" + GetLastOredrLevel() + "," + GetLastOredrLevelPrice () + ",'Buy'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
+                 "VALUES (0," + DoubleToString(trans.price) + ",'Buy'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
       }
 
-      trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
-      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,deviation1);
+      trade.BuyStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,GetLastOrderLevelPriceByTicket(trans.position) + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
+      trade.SellStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,GetLastOrderLevelPriceByTicket(trans.position) - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,deviation1);
    }
 
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
@@ -80,23 +85,28 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
       if(IsOrderSellStop(trans.position))
       {
          trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType = 'BuyStop'";
+         DatabaseDataEntryQuery(query);
 
          query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
          DatabaseDataEntryQuery(query);
 
+         query = "update tbl_Hedge set IsLastOrder = 0 WHERE IsLastOrder = 1";
+         DatabaseDataEntryQuery(query);
+
          query = "INSERT INTO tbl_Hedge (Level,LevelPrice,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES (" + GetLastOredrLevelByTicket(trans.position) + "," + GetLastOredrLevelPriceByTicket(trans.position) + ",'SellStopToSell'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
+                 "VALUES (" + GetLastOrderLevelByTicket(trans.position) + "," + GetLastOrderLevelPriceByTicket(trans.position) + ",'SellStopToSell'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
       }
       else
       {
          query = "INSERT INTO tbl_Hedge (Level,LevelPrice,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES (" + GetLastOredrLevel() + "," + GetLastOredrLevelPrice() + ",'Sell'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
+                 "VALUES (0," + DoubleToString(trans.price) + ",'Sell'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
       }
 
-      trade.BuyStop(orderVolume, trans.price + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
-      trade.SellStop(orderVolume, trans.price - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,trans.price - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,deviation1);
+      trade.BuyStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,GetLastOrderLevelPriceByTicket(trans.position) + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
+      trade.SellStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,GetLastOrderLevelPriceByTicket(trans.position) - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,deviation1);
    }
 
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)//end buy
@@ -114,14 +124,14 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
    if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_STOP)
    {
       query = "INSERT INTO tbl_Hedge (Level,LevelPrice,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-              "VALUES (" + (GetLastOredrLevel() + 1) + "," + (GetLastOredrLevelPrice() + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",'BuyStop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",false,false,false,false,false);";
+              "VALUES (" + (GetLastOrderLevel() + 1) + "," + (GetLastOrderLevelPrice() + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",'BuyStop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",false,false,false,false,false);";
       DatabaseDataEntryQuery(query);
    }
 
    if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_STOP)
    {
       query = "INSERT INTO tbl_Hedge (Level,LevelPrice,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-              "VALUES (" + (GetLastOredrLevel() - 1) + "," + (GetLastOredrLevelPrice() - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",'SellStop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",false,false,false,false,false);";
+              "VALUES (" + (GetLastOrderLevel() - 1) + "," + (GetLastOrderLevelPrice() - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",'SellStop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",false,false,false,false,false);";
       DatabaseDataEntryQuery(query);
    }
 
@@ -371,7 +381,7 @@ bool IsMarketOpen()
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-double GetLastOredrLevelPrice()
+double GetLastOrderLevelPrice()
 {
    double LevelPrice = 0;
    string currentQuery = "SELECT LevelPrice FROM tbl_Hedge WHERE IslastOrder = 1";
@@ -415,7 +425,7 @@ double GetLastOredrLevelPrice()
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-int GetLastOredrLevel()
+int GetLastOrderLevel()
 {
    int Level;
    string currentQuery = "SELECT Level FROM tbl_Hedge WHERE IslastOrder = 1";
@@ -454,15 +464,15 @@ int GetLastOredrLevel()
    }
 //--- remove the query after use
    DatabaseFinalize(request);
-   return 1;
+   return 0;
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-double GetLastOredrLevelPriceByTicket(int ticket)
+double GetLastOrderLevelPriceByTicket(ulong ticket)
 {
    double LevelPrice = 0;
-   string currentQuery = "SELECT LevelPrice FROM tbl_Hedge WHERE Ticket = " + ticket;
+   string currentQuery = "SELECT LevelPrice FROM tbl_Hedge WHERE OrderTicket = " + ticket;
    string filename = "Hedgedb.sqlite";
 
 //--- create or open the database in the common terminal folder
@@ -503,10 +513,10 @@ double GetLastOredrLevelPriceByTicket(int ticket)
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-int GetLastOredrLevelByTicket(int ticket)
+int GetLastOrderLevelByTicket(ulong ticket)
 {
    int Level;
-   string currentQuery = "SELECT Level FROM tbl_Hedge WHERE Ticket = " + ticket;
+   string currentQuery = "SELECT Level FROM tbl_Hedge WHERE OrderTicket = " + ticket;
    string filename = "Hedgedb.sqlite";
 
 //--- create or open the database in the common terminal folder
@@ -542,6 +552,50 @@ int GetLastOredrLevelByTicket(int ticket)
    }
 //--- remove the query after use
    DatabaseFinalize(request);
-   return 1;
+   return 0;
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool IsExistSameOrderInThisLevel(int level, string orderType)
+{
+   int isExistSameOrderInThisLevel = 0;
+   string currentQuery = "SELECT CASE WHEN EXISTS(SELECT 1 FROM tbl_Hedge WHERE IsDeletedOrder = 0 AND IsOpenedOrder = 1 AND OrderType LIKE '" + orderType + "%' AND Level = " + level + " ) THEN 1 ELSE 0  END AS IsExistSameOrderInThisLevel";
+   string filename = "Hedgedb.sqlite";
+
+//--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if(db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return false;
+   }
+//--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if(request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return false;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for(int i = 0; i < DatabaseReadCount; i++)
+   {
+      if(DatabaseColumnInteger(request, 0, isExistSameOrderInThisLevel ))
+      {
+         return isExistSameOrderInThisLevel == 1 ? true : false;
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return false;
+      }
+   }
+//--- remove the query after use
+   DatabaseFinalize(request);
+   return isExistSameOrderInThisLevel == 1 ? true : false;
 }
 //+------------------------------------------------------------------+
