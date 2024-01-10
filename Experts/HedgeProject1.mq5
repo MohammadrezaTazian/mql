@@ -40,6 +40,10 @@ void OnTick()
    {
       isFirstBuy = true;
    }
+   if(GetOrderFakeStopType() == 'BuyFakeStop')
+     {
+      
+     }
 }
 //+------------------------------------------------------------------+
 //| TradeTransaction function                                        |
@@ -105,8 +109,27 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
          DatabaseDataEntryQuery(query);
       }
 
-      trade.BuyStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,GetLastOrderLevelPriceByTicket(trans.position) + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
-      trade.SellStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,GetLastOrderLevelPriceByTicket(trans.position) - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,deviation1);
+      if (IsExistSameOrderInThisLevel(GetLastOrderLevelByTicket(trans.position),"Buy"))
+      {
+         query = "INSERT INTO tbl_Hedge (Level,LevelPrice,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+                 "VALUES (" + (GetLastOrderLevel() + 1) + "," + (GetLastOrderLevelPrice() + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",'BuyFakeStop'," + (-1) + "," + (GetLastOrderLevelPrice() + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + (GetLastOrderLevelPrice() + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",false,false,true,false,false);";
+         DatabaseDataEntryQuery(query);
+      }
+      else
+      {
+         trade.BuyStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) + orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,GetLastOrderLevelPriceByTicket(trans.position) + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1);
+      }
+      if(IsExistSameOrderInThisLevel(GetLastOrderLevelByTicket(trans.position),"Sell"))
+      {
+         query = "INSERT INTO tbl_Hedge (Level,LevelPrice,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+                 "VALUES (" + (GetLastOrderLevel() - 1) + "," + (GetLastOrderLevelPrice() - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",'SellFakeStop'," + (-1) + "," + (GetLastOrderLevelPrice() - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + (GetLastOrderLevelPrice() - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",false,false,true,false,false);";
+         DatabaseDataEntryQuery(query);
+      }
+      else
+      {
+         trade.SellStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) - orderDistance  * SymbolInfoDouble(Symbol(), SYMBOL_POINT),Symbol(),0,GetLastOrderLevelPriceByTicket(trans.position) - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT),0,0,NULL,type_filling1,deviation1);
+      }
+
    }
 
    if(trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position)//end buy
@@ -560,7 +583,7 @@ int GetLastOrderLevelByTicket(ulong ticket)
 bool IsExistSameOrderInThisLevel(int level, string orderType)
 {
    int isExistSameOrderInThisLevel = 0;
-   string currentQuery = "SELECT CASE WHEN EXISTS(SELECT 1 FROM tbl_Hedge WHERE IsDeletedOrder = 0 AND IsOpenedOrder = 1 AND OrderType LIKE '" + orderType + "%' AND Level = " + level + " ) THEN 1 ELSE 0  END AS IsExistSameOrderInThisLevel";
+   string currentQuery = "SELECT CASE WHEN EXISTS(SELECT 1 FROM tbl_Hedge WHERE IsDeletedOrder = 0 AND IsFakeOrder = 0 AND IsOpenedOrder = 1 AND OrderType LIKE '" + orderType + "%' AND Level = " + level + " ) THEN 1 ELSE 0  END AS IsExistSameOrderInThisLevel";
    string filename = "Hedgedb.sqlite";
 
 //--- create or open the database in the common terminal folder
@@ -598,4 +621,49 @@ bool IsExistSameOrderInThisLevel(int level, string orderType)
    DatabaseFinalize(request);
    return isExistSameOrderInThisLevel == 1 ? true : false;
 }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool IsExistFakeOrderStop()
+{
+   int isExistFakeOrderStop = 0;
+   string currentQuery = "SELECT CASE WHEN EXISTS(SELECT 1 FROM tbl_Hedge WHERE IsDeletedOrder = 0 AND IsFakeOrder = 1 AND IsOpenedOrder = 0 AND OrderType LIKE '%FakeStop' ) THEN 1 ELSE 0  END AS IsExistFakeOrderStop";
+   string filename = "Hedgedb.sqlite";
+
+//--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if(db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return false;
+   }
+//--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if(request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return false;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for(int i = 0; i < DatabaseReadCount; i++)
+   {
+      if(DatabaseColumnInteger(request, 0, isExistFakeOrderStop ))
+      {
+         return isExistFakeOrderStop == 1 ? true : false;
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return false;
+      }
+   }
+//--- remove the query after use
+   DatabaseFinalize(request);
+   return isExistFakeOrderStop == 1 ? true : false;
+}
+
 //+------------------------------------------------------------------+
