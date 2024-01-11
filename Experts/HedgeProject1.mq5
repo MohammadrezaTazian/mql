@@ -40,11 +40,29 @@ void OnTick()
    {
       isFirstBuy = true;
    }
-   if (GetFakeOrderStopLevelPrice('BuyFakeStop') != NULL)
+   if (GetFakeOrderStopLevelPrice("BuyFakeStop") != 0 && Ask >= GetFakeOrderStopLevelPrice("BuyFakeStop"))
    {
+      string query = "Update tbl_Hedge SET IsDeleted = 1 WHERE IsFakeOrder = 1";
+      DatabaseDataEntryQuery(query);
+
+      query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+              "VALUES (" +
+              (GetLastOrderLevel() + 1) + "," + GetFakeOrderStopLevelPrice("BuyFakeStop") + "," + GetLastResetNo() +
+              "'BuyFakeStopToBuyFake',-1," + GetFakeOrderStopLevelPrice("BuyFakeStop") + ",0,true,false,true,false,true);";
+      DatabaseDataEntryQuery(query);
+            MakePenddingOrder();
    }
-   if (GetFakeOrderStopLevelPrice('SellFakeStop') != NULL)
+   if (GetFakeOrderStopLevelPrice("SellFakeStop") != 0 && Bid <= GetFakeOrderStopLevelPrice("BuyFakeStop"))
    {
+      string query = "Update tbl_Hedge SET IsDeleted = 1 WHERE IsFakeOrder = 1";
+      DatabaseDataEntryQuery(query);
+
+      query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+              "VALUES (" +
+              (GetLastOrderLevel() - 1) + "," + GetFakeOrderStopLevelPrice("SellFakeStop") + "," + GetLastResetNo() +
+              "'SellFakeStopToSellFake',-1," + GetFakeOrderStopLevelPrice("SellFakeStop") + ",0,true,false,true,false,true);";
+      DatabaseDataEntryQuery(query);
+      MakePenddingOrder();
    }
 }
 //+------------------------------------------------------------------+
@@ -83,28 +101,7 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
          DatabaseDataEntryQuery(query);
       }
 
-      if (IsExistSameOrderInThisLevel(GetLastOrderLevel() + 1, "Buy"))
-      {
-         query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES (" +
-                 (GetLastOrderLevel() + 1) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + GetLastResetNo() + ",'BuyFakeStop'," + (-1) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",false,false,true,false,false);";
-         DatabaseDataEntryQuery(query);
-      }
-      else
-      {
-         trade.BuyStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPriceByTicket(trans.position) + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1);
-      }
-      if (IsExistSameOrderInThisLevel(GetLastOrderLevel() - 1, "Sell"))
-      {
-         query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES (" +
-                 (GetLastOrderLevel() - 1) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + GetLastResetNo() + ",'SellFakeStop'," + (-1) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",false,false,true,false,false);";
-         DatabaseDataEntryQuery(query);
-      }
-      else
-      {
-         trade.SellStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPriceByTicket(trans.position) - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1, deviation1);
-      }
+      MakePenddingOrder();
    }
 
    if (trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
@@ -134,25 +131,7 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
          DatabaseDataEntryQuery(query);
       }
 
-      if (IsExistSameOrderInThisLevel(GetLastOrderLevel() - 1, "Buy"))
-      {
-         query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES (" +
-                 (GetLastOrderLevel() + 1) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + GetLastResetNo() + ",'BuyFakeStop'," + (-1) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",false,false,true,false,false);";
-         DatabaseDataEntryQuery(query);
-      }
-      else
-      {
-         trade.BuyStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPriceByTicket(trans.position) + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1);
-      }
-      if (IsExistSameOrderInThisLevel(GetLastOrderLevel() - 1, "Sell"))
-      {
-         query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
-                 "VALUES (" +
-                 (GetLastOrderLevel() - 1) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + GetLastResetNo() + ",'SellFakeStop'," + (-1) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",false,false,true,false,false);";
-         DatabaseDataEntryQuery(query);
-      }
-      else
+      MakePenddingOrder();
       {
          trade.SellStop(orderVolume, GetLastOrderLevelPriceByTicket(trans.position) - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPriceByTicket(trans.position) - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1, deviation1);
       }
@@ -693,7 +672,7 @@ bool IsExistFakeOrderStop()
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-int GetFakeOrderStopLevelPrice(string orderType)
+double GetFakeOrderStopLevelPrice(string orderType)
 {
    double fakeOrderStopLevelPrice = 0;
    string currentQuery = "SELECT LevelPrice FROM tbl_Hedge WHERE IsFakeOrder = 1 AND IsDeletedOrder = 0 AND OrderType = " + orderType;
@@ -778,4 +757,30 @@ int GetLastResetNo()
    DatabaseFinalize(request);
    return lastResetNo;
 }
-//+------------------------------------------------------------------+
+
+void MakePenddingOrder()
+{
+   if (IsExistSameOrderInThisLevel(GetLastOrderLevel() + 1, "Buy"))
+   {
+      string query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+                     "VALUES (" +
+                     (GetLastOrderLevel() + 1) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + GetLastResetNo() + ",'BuyFakeStop'," + (-1) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",false,false,true,false,false);";
+      DatabaseDataEntryQuery(query);
+   }
+   else
+   {
+      trade.BuyStop(orderVolume, GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1);
+   }
+
+   if (IsExistSameOrderInThisLevel(GetLastOrderLevel() - 1, "Sell"))
+   {
+      string query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+                     "VALUES (" +
+                     (GetLastOrderLevel() - 1) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + GetLastResetNo() + ",'SellFakeStop'," + (-1) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + ",false,false,true,false,false);";
+      DatabaseDataEntryQuery(query);
+   }
+   else
+   {
+      trade.SellStop(orderVolume, GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1, deviation1);
+   }
+}
