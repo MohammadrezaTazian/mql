@@ -40,8 +40,12 @@ void OnTick()
    {
       isFirstBuy = true;
    }
-   if (GetFakeOrderStopLevelPrice('BuyFakeStop') != NULL){}
-   if (GetFakeOrderStopLevelPrice('SellFakeStop') != NULL){}
+   if (GetFakeOrderStopLevelPrice('BuyFakeStop') != NULL)
+   {
+   }
+   if (GetFakeOrderStopLevelPrice('SellFakeStop') != NULL)
+   {
+   }
 }
 //+------------------------------------------------------------------+
 //| TradeTransaction function                                        |
