@@ -35,10 +35,13 @@ void OnDeinit(const int reason)
 void OnTick()
 {
    double Ask = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK), _Digits);
+   double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
    if (IsMarketOpen() && !isFirstBuy && trade.Buy(orderVolume, Symbol(), Ask, 0, Ask + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), NULL, type_filling1))
    {
       isFirstBuy = true;
    }
+   if (GetFakeOrderStopLevelPrice('BuyFakeStop') != NULL){}
+   if (GetFakeOrderStopLevelPrice('SellFakeStop') != NULL){}
 }
 //+------------------------------------------------------------------+
 //| TradeTransaction function                                        |
@@ -682,6 +685,50 @@ bool IsExistFakeOrderStop()
    //--- remove the query after use
    DatabaseFinalize(request);
    return isExistFakeOrderStop == 1 ? true : false;
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+int GetFakeOrderStopLevelPrice(string orderType)
+{
+   double fakeOrderStopLevelPrice = 0;
+   string currentQuery = "SELECT LevelPrice FROM tbl_Hedge WHERE IsFakeOrder = 1 AND IsDeletedOrder = 0 AND OrderType = " + orderType;
+   string filename = "Hedgedb.sqlite";
+
+   //--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if (db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return false;
+   }
+   //--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if (request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return false;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for (int i = 0; i < DatabaseReadCount; i++)
+   {
+      if (DatabaseColumnDouble(request, 0, fakeOrderStopLevelPrice))
+      {
+         return fakeOrderStopLevelPrice;
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return false;
+      }
+   }
+   //--- remove the query after use
+   DatabaseFinalize(request);
+   return fakeOrderStopLevelPrice;
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
