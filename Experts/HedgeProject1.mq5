@@ -716,7 +716,7 @@ double GetFakeOrderStopLevelPrice(string orderType)
 int GetLastResetNo()
 {
    int lastResetNo = -1;
-   string currentQuery = "SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM tbl_Hedge) THEN 1 WHEN EXISTS (SELECT 1 FROM tbl_Hedge WHERE IsLastOrder = 1) THEN (SELECT ResetNo FROM tbl_Hedge WHERE IsLastOrder = 1) ELSE (SELECT MAX(ResetNo) + 1 FROM tbl_Hedge) END LastResetNo";
+   string currentQuery = "SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM tbl_Hedge) THEN 1 WHEN EXISTS (SELECT 1 FROM tbl_Hedge WHERE IsDeletedOrder = 0) THEN (SELECT ResetNo FROM tbl_Hedge WHERE IsDeletedOrder = 0) ELSE (SELECT MAX(ResetNo) + 1 FROM tbl_Hedge) END LastResetNo";
    string filename = "Hedgedb.sqlite";
 
    //--- create or open the database in the common terminal folder
