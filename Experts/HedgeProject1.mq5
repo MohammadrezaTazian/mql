@@ -42,26 +42,28 @@ void OnTick()
    }
    if (GetFakeOrderStopLevelPrice("BuyFakeStop") != 0 && Ask >= GetFakeOrderStopLevelPrice("BuyFakeStop"))
    {
-      string query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1";
-      DatabaseDataEntryQuery(query);
-
-      query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+      string query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
               "VALUES (" +
               (GetLastOrderLevel() + 1) + "," + GetFakeOrderStopLevelPrice("BuyFakeStop") + "," + GetLastResetNo() +
               ",'BuyFakeStopToBuyFake',-1," + GetFakeOrderStopLevelPrice("BuyFakeStop") + ",0,true,false,true,false,true);";
       DatabaseDataEntryQuery(query);
+      
+      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1 AND OrderType = 'BuyFakeStop'";
+      DatabaseDataEntryQuery(query);
+      
       MakePenddingOrder();
    }
    if (GetFakeOrderStopLevelPrice("SellFakeStop") != 0 && Bid <= GetFakeOrderStopLevelPrice("SellFakeStop"))
    {
-      string query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1";
-      DatabaseDataEntryQuery(query);
-
-      query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
+      string query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
               "VALUES (" +
               (GetLastOrderLevel() - 1) + "," + GetFakeOrderStopLevelPrice("SellFakeStop") + "," + GetLastResetNo() +
               ",'SellFakeStopToSellFake',-1," + GetFakeOrderStopLevelPrice("SellFakeStop") + ",0,true,false,true,false,true);";
       DatabaseDataEntryQuery(query);
+
+      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1 AND OrderType = 'SellFakeStop'";
+      DatabaseDataEntryQuery(query);
+      
       MakePenddingOrder();
    }
 }
@@ -79,7 +81,7 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
       if (IsOrderBuyStop(trans.position))
       {
          trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
-         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType = 'SellStop'";
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType IN ('SellStop','SellFakeStop')";
          DatabaseDataEntryQuery(query);
 
          query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
@@ -109,7 +111,7 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
       if (IsOrderSellStop(trans.position))
       {
          trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
-         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType = 'BuyStop'";
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType IN ('BuyStop','BuyFakeStop')";
          DatabaseDataEntryQuery(query);
 
          query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
