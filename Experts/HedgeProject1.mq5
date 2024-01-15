@@ -9,8 +9,8 @@
 #include <Trade/Customtrade.mqh>
 CustomCTrade trade;
 bool isFirstBuy = false;
-double tpDistance = 90;
-double orderDistance = 60;
+double tpDistance = 70;
+double orderDistance = 50;
 double orderVolume = 0.00001;
 ENUM_ORDER_TYPE_FILLING type_filling1 = ORDER_FILLING_FOK;
 int deviation1 = 0;
@@ -27,7 +27,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
-   //---
+//---
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -54,7 +54,7 @@ void OnTick()
               ",'BuyFakeStopToBuyFake',-1," + GetFakeOrderStopLevelPrice("BuyFakeStop") + ",0,true,false,true,false,true);";
       DatabaseDataEntryQuery(query);
 
-      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1 AND OrderType = 'BuyFakeStop'";
+      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1 AND OrderType IN ('BuyFakeStop','SellFakeStop')";
       DatabaseDataEntryQuery(query);
 
       MakePenddingOrder();
@@ -74,7 +74,7 @@ void OnTick()
               ",'SellFakeStopToSellFake',-1," + GetFakeOrderStopLevelPrice("SellFakeStop") + ",0,true,false,true,false,true);";
       DatabaseDataEntryQuery(query);
 
-      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1 AND OrderType = 'SellFakeStop'";
+      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1 AND OrderType IN ('BuyFakeStop','SellFakeStop')";
       DatabaseDataEntryQuery(query);
 
       MakePenddingOrder();
@@ -181,7 +181,7 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
 void CreateDatabaseAndTable()
 {
    string filename = "Hedgedb.sqlite";
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
@@ -189,14 +189,14 @@ void CreateDatabaseAndTable()
       return;
    }
 
-   //--- if the COMPANY table exists, delete it
+//--- if the COMPANY table exists, delete it
    if (DatabaseTableExists(db, "tbl_Hedge") && !DatabaseExecute(db, "DROP TABLE tbl_Hedge"))
    {
       Print("Failed to drop table COMPANY with code ", GetLastError());
       DatabaseClose(db);
       return;
    }
-   //--- create the COMPANY table
+//--- create the COMPANY table
    if (!DatabaseExecute(db, "CREATE TABLE tbl_Hedge("
                         "ID                      INTEGER                    PRIMARY KEY    AUTOINCREMENT,"
                         "Level                   INTEGER                    NOT NULL,"
@@ -224,7 +224,7 @@ void CreateDatabaseAndTable()
 void DatabaseDataEntryQuery(string currentQuery)
 {
    string filename = "Hedgedb.sqlite";
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
@@ -249,14 +249,14 @@ bool IsOrderBuyStop(ulong positionId)
    string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OrderType = 'BuyStop' AND IsDeletedOrder = 0) THEN 1 ELSE 0 End AS isOrderBuyStop";
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -280,7 +280,7 @@ bool IsOrderBuyStop(ulong positionId)
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return isOrderBuyStop == 1 ? true : false;
 }
@@ -293,14 +293,14 @@ bool IsOrderSellStop(ulong positionId)
    string currentQuery = "SELECT  CASE WHEN EXISTS (SELECT 1 From tbl_Hedge WHERE OrderType = 'SellStop' AND IsDeletedOrder = 0) THEN 1 ELSE 0 End AS isOrderSellStop";
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -324,7 +324,7 @@ bool IsOrderSellStop(ulong positionId)
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return isOrderSellStop == 1 ? true : false;
 }
@@ -337,14 +337,14 @@ int GetTicketOfOpenedPenddingStop(string pendingStopType)
    string currentQuery = "SELECT OrderTicket FROM tbl_Hedge WHERE OrderType = '" + pendingStopType + "' AND IsDeletedOrder = 0";
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -368,7 +368,7 @@ int GetTicketOfOpenedPenddingStop(string pendingStopType)
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return -2;
 }
@@ -426,14 +426,14 @@ double GetLastOrderLevelPrice()
    string currentQuery = "SELECT LevelPrice FROM tbl_Hedge WHERE IslastOrder = 1";
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -457,7 +457,7 @@ double GetLastOrderLevelPrice()
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return 0;
 }
@@ -470,14 +470,14 @@ int GetLastOrderLevel()
    string currentQuery = "SELECT Level FROM tbl_Hedge WHERE IslastOrder = 1";
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -501,7 +501,7 @@ int GetLastOrderLevel()
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return 0;
 }
@@ -514,14 +514,14 @@ double GetLastOrderLevelPriceByTicket(ulong ticket)
    string currentQuery = "SELECT LevelPrice FROM tbl_Hedge WHERE OrderTicket = " + ticket;
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -545,7 +545,7 @@ double GetLastOrderLevelPriceByTicket(ulong ticket)
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return 0;
 }
@@ -558,14 +558,14 @@ int GetLastOrderLevelByTicket(ulong ticket)
    string currentQuery = "SELECT Level FROM tbl_Hedge WHERE OrderTicket = " + ticket;
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -589,7 +589,7 @@ int GetLastOrderLevelByTicket(ulong ticket)
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return 0;
 }
@@ -602,14 +602,14 @@ bool IsExistSameOrderInThisLevel(int level, string orderType)
    string currentQuery = "SELECT CASE WHEN EXISTS(SELECT 1 FROM tbl_Hedge WHERE IsDeletedOrder = 0 AND IsFakeOrder = 0 AND IsOpenedOrder = 1 AND OrderType LIKE '" + orderType + "%' AND Level = " + level + " ) THEN 1 ELSE 0  END AS IsExistSameOrderInThisLevel";
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -633,7 +633,7 @@ bool IsExistSameOrderInThisLevel(int level, string orderType)
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return isExistSameOrderInThisLevel == 1 ? true : false;
 }
@@ -646,14 +646,14 @@ bool IsExistFakeOrderStop()
    string currentQuery = "SELECT CASE WHEN EXISTS(SELECT 1 FROM tbl_Hedge WHERE IsDeletedOrder = 0 AND IsFakeOrder = 1 AND IsOpenedOrder = 0 AND OrderType LIKE '%FakeStop' ) THEN 1 ELSE 0  END AS IsExistFakeOrderStop";
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -677,7 +677,7 @@ bool IsExistFakeOrderStop()
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return isExistFakeOrderStop == 1 ? true : false;
 }
@@ -690,14 +690,14 @@ double GetFakeOrderStopLevelPrice(string orderType)
    string currentQuery = "SELECT LevelPrice FROM tbl_Hedge WHERE IsFakeOrder = 1 AND IsDeletedOrder = 0 AND OrderType = '" + orderType + "'";
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -721,7 +721,7 @@ double GetFakeOrderStopLevelPrice(string orderType)
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return fakeOrderStopLevelPrice;
 }
@@ -734,14 +734,14 @@ int GetLastResetNo()
    string currentQuery = "SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM tbl_Hedge) THEN 1 WHEN EXISTS (SELECT 1 FROM tbl_Hedge WHERE IsDeletedOrder = 0) THEN (SELECT ResetNo FROM tbl_Hedge WHERE IsDeletedOrder = 0) ELSE (SELECT MAX(ResetNo) + 1 FROM tbl_Hedge) END LastResetNo";
    string filename = "Hedgedb.sqlite";
 
-   //--- create or open the database in the common terminal folder
+//--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
    if (db == INVALID_HANDLE)
    {
       Print("DB: ", filename, " open failed with code ", GetLastError());
       return false;
    }
-   //--- create a query and get a handle for it
+//--- create a query and get a handle for it
    int request = DatabasePrepare(db, currentQuery);
    if (request == INVALID_HANDLE)
    {
@@ -765,7 +765,7 @@ int GetLastResetNo()
          return false;
       }
    }
-   //--- remove the query after use
+//--- remove the query after use
    DatabaseFinalize(request);
    return lastResetNo;
 }
@@ -775,6 +775,7 @@ int GetLastResetNo()
 //+------------------------------------------------------------------+
 void MakePenddingOrder()
 {
+   int epsilon = 0;
    if (IsExistSameOrderInThisLevel(GetLastOrderLevel() + 1, "Buy"))
    {
       string query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
@@ -784,7 +785,10 @@ void MakePenddingOrder()
    }
    else
    {
-      trade.BuyStop(orderVolume, GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1);
+      while(!trade.BuyStop(orderVolume, GetLastOrderLevelPrice() + (orderDistance + epsilon) * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1))
+      {
+         epsilon ++;
+      }
    }
 
    if (IsExistSameOrderInThisLevel(GetLastOrderLevel() - 1, "Sell"))
@@ -796,7 +800,17 @@ void MakePenddingOrder()
    }
    else
    {
-      trade.SellStop(orderVolume, GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1, deviation1);
+      Print(
+         "ASK: ",SymbolInfoDouble(Symbol(), SYMBOL_ASK),
+         "\n BID: ",SymbolInfoDouble(Symbol(), SYMBOL_BID),
+         "\n Price: ",GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)
+      );
+
+      epsilon = 0;
+      while(!trade.SellStop(orderVolume, GetLastOrderLevelPrice() - (orderDistance + epsilon) * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1, deviation1))
+      {
+         epsilon ++;
+      }
    }
 }
 //+------------------------------------------------------------------+
