@@ -42,6 +42,7 @@ void OnTick()
    }
    if (GetFakeOrderStopLevelPrice("BuyFakeStop") != 0 && Ask >= GetFakeOrderStopLevelPrice("BuyFakeStop"))
    {
+      int lastLevel = GetLastOrderLevel();
       string query = "Update tbl_Hedge SET IsLastOrder = 0 WHERE IslastOrder = 1";
       DatabaseDataEntryQuery(query);
 
@@ -50,7 +51,7 @@ void OnTick()
 
       query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
               "VALUES (" +
-              (GetLastOrderLevel() + 1) + "," + GetFakeOrderStopLevelPrice("BuyFakeStop") + "," + GetLastResetNo() +
+              (lastLevel + 1) + "," + GetFakeOrderStopLevelPrice("BuyFakeStop") + "," + GetLastResetNo() +
               ",'BuyFakeStopToBuyFake',-1," + GetFakeOrderStopLevelPrice("BuyFakeStop") + ",0,true,false,true,false,true);";
       DatabaseDataEntryQuery(query);
 
@@ -62,6 +63,8 @@ void OnTick()
    if (GetFakeOrderStopLevelPrice("SellFakeStop") != 0 && Bid <= GetFakeOrderStopLevelPrice("SellFakeStop"))
 
    {
+      int lastLevel = GetLastOrderLevel();
+
       string query = "Update tbl_Hedge SET IsLastOrder = 0 WHERE IslastOrder = 1";
       DatabaseDataEntryQuery(query);
 
@@ -70,7 +73,7 @@ void OnTick()
 
       query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
               "VALUES (" +
-              (GetLastOrderLevel() - 1) + "," + GetFakeOrderStopLevelPrice("SellFakeStop") + "," + GetLastResetNo() +
+              (lastLevel - 1) + "," + GetFakeOrderStopLevelPrice("SellFakeStop") + "," + GetLastResetNo() +
               ",'SellFakeStopToSellFake',-1," + GetFakeOrderStopLevelPrice("SellFakeStop") + ",0,true,false,true,false,true);";
       DatabaseDataEntryQuery(query);
 
@@ -107,6 +110,9 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
                  "VALUES (" +
                  GetLastOrderLevelByTicket(trans.position) + "," + GetLastOrderLevelPriceByTicket(trans.position) + "," + GetLastResetNo() + ",'BuyStopToBuy'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
          DatabaseDataEntryQuery(query);
+
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType IN ('SellFakeStopToSellFake','BuyFakeStopToBuyFake')";
+         DatabaseDataEntryQuery(query);
       }
       else
       {
@@ -136,6 +142,9 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
          query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
                  "VALUES (" +
                  GetLastOrderLevelByTicket(trans.position) + "," + GetLastOrderLevelPriceByTicket(trans.position) + "," + GetLastResetNo() + ",'SellStopToSell'," + IntegerToString(trans.position) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",true,false,false,false,true);";
+         DatabaseDataEntryQuery(query);
+
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType IN ('SellFakeStopToSellFake','BuyFakeStopToBuyFake')";
          DatabaseDataEntryQuery(query);
       }
       else
