@@ -12,6 +12,7 @@ bool isFirstBuy = false;
 double tpDistance = 70;
 double orderDistance = 50;
 double orderVolume = 0.00001;
+int hedgeSize = 1;
 ENUM_ORDER_TYPE_FILLING type_filling1 = ORDER_FILLING_FOK;
 int deviation1 = 0;
 //+------------------------------------------------------------------+
@@ -42,7 +43,10 @@ void OnTick()
    }
    if(IsExistConditionForHedge())
    {
-
+      RemoveTPFromHedgeOrder();
+      
+      string query = "Update tbl_Hedge SET IsHedgedOrder = 1 WHERE IsOpenedOrder = 1 AND IsDeletedOrder = 0 AND IsHedgedOrder = 0 AND IsFakeOrder = 0";
+      DatabaseDataEntryQuery(query);
    }
    if (GetFakeOrderStopLevelPrice("BuyFakeStop") != 0 && Ask >= GetFakeOrderStopLevelPrice("BuyFakeStop"))
    {
@@ -813,12 +817,6 @@ void MakePenddingOrder()
    }
    else
    {
-      Print(
-         "ASK: ",SymbolInfoDouble(Symbol(), SYMBOL_ASK),
-         "\n BID: ",SymbolInfoDouble(Symbol(), SYMBOL_BID),
-         "\n Price: ",GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)
-      );
-
       epsilon = 0;
       while(!trade.SellStop(orderVolume, GetLastOrderLevelPrice() - (orderDistance + epsilon) * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1, deviation1))
       {
@@ -832,15 +830,15 @@ void MakePenddingOrder()
 bool IsExistConditionForHedge()
 {
    int isExistConditionForHedge = 0;
-   string currentQuery = "SELECT"
-                         "CASE"
-                         "WHEN"
-                         "(SELECT COUNT(*) FROM @tbl_Hedge WHERE OrderType IN ('Buy','BuyStopToBuy') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) = 2"
-                         "AND (SELECT COUNT(*) FROM @tbl_Hedge WHERE OrderType IN ('Sell','SellStopToSell') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) = 2 THEN 1"
-                         "ELSE 0"
-                         "END AS IsExistConditionForHedge";
+   string currentQuery = "SELECT "
+                         "CASE "
+                         "WHEN "
+                         " (SELECT COUNT(*) FROM tbl_Hedge WHERE OrderType IN ('Buy','BuyStopToBuy') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) = " + hedgeSize + ""
+                         " AND (SELECT COUNT(*) FROM tbl_Hedge WHERE OrderType IN ('Sell','SellStopToSell') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) = " + hedgeSize + " THEN 1"
+                         " ELSE 0"
+                         " END AS IsExistConditionForHedge";
 
-  string filename = "Hedgedb.sqlite";
+   string filename = "Hedgedb.sqlite";
 
 //--- create or open the database in the common terminal folder
    int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
@@ -877,4 +875,44 @@ bool IsExistConditionForHedge()
    DatabaseFinalize(request);
    return isExistConditionForHedge == 1 ? true : false;
 }
-//+------------------------------------------------------------------+
+void RemoveTPFromHedgeOrder()
+{
+   int orderTicket = 0;
+   string currentQuery = "SELECT OrderTicket FROM tbl_Hedge WHERE IsOpenedOrder = 1 AND IsDeletedOrder = 0 AND IsHedgedOrder = 0 AND IsFakeOrder = 0";
+
+   string filename = "Hedgedb.sqlite";
+
+//--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if (db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return;
+   }
+//--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if (request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for (int i = 0; i < DatabaseReadCount; i++)
+   {
+      if (DatabaseColumnInteger(request, 0, orderTicket))
+      {
+         trade.PositionModify(orderTicket, 0, 0);
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return;
+      }
+   }
+//--- remove the query after use
+   DatabaseFinalize(request);
+}
