@@ -40,6 +40,10 @@ void OnTick()
    {
       isFirstBuy = true;
    }
+   if(IsExistConditionForHedge())
+   {
+
+   }
    if (GetFakeOrderStopLevelPrice("BuyFakeStop") != 0 && Ask >= GetFakeOrderStopLevelPrice("BuyFakeStop"))
    {
       int lastLevel = GetLastOrderLevel();
@@ -821,5 +825,56 @@ void MakePenddingOrder()
          epsilon ++;
       }
    }
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool IsExistConditionForHedge()
+{
+   int isExistConditionForHedge = 0;
+   string currentQuery = "SELECT"
+                         "CASE"
+                         "WHEN"
+                         "(SELECT COUNT(*) FROM @tbl_Hedge WHERE OrderType IN ('Buy','BuyStopToBuy') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) = 2"
+                         "AND (SELECT COUNT(*) FROM @tbl_Hedge WHERE OrderType IN ('Sell','SellStopToSell') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) = 2 THEN 1"
+                         "ELSE 0"
+                         "END AS IsExistConditionForHedge";
+
+  string filename = "Hedgedb.sqlite";
+
+//--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if (db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return false;
+   }
+//--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if (request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return false;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for (int i = 0; i < DatabaseReadCount; i++)
+   {
+      if (DatabaseColumnInteger(request, 0, isExistConditionForHedge))
+      {
+         return isExistConditionForHedge == 1 ? true : false;
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return false;
+      }
+   }
+//--- remove the query after use
+   DatabaseFinalize(request);
+   return isExistConditionForHedge == 1 ? true : false;
 }
 //+------------------------------------------------------------------+
