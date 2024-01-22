@@ -44,7 +44,7 @@ void OnTick()
    if(IsExistConditionForHedge())
    {
       RemoveTPFromHedgeOrder();
-      
+
       string query = "Update tbl_Hedge SET IsHedgedOrder = 1 WHERE IsOpenedOrder = 1 AND IsDeletedOrder = 0 AND IsHedgedOrder = 0 AND IsFakeOrder = 0";
       DatabaseDataEntryQuery(query);
    }
@@ -857,7 +857,7 @@ bool IsExistConditionForHedge()
    }
 
    int DatabaseReadCount = DatabaseRead(request);
-   for (int i = 0; i < DatabaseReadCount; i++)
+   for (int i = 0; DatabaseReadCount; i++)
    {
       if (DatabaseColumnInteger(request, 0, isExistConditionForHedge))
       {
@@ -875,10 +875,13 @@ bool IsExistConditionForHedge()
    DatabaseFinalize(request);
    return isExistConditionForHedge == 1 ? true : false;
 }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
 void RemoveTPFromHedgeOrder()
 {
    int orderTicket = 0;
-   string currentQuery = "SELECT OrderTicket FROM tbl_Hedge WHERE IsOpenedOrder = 1 AND IsDeletedOrder = 0 AND IsHedgedOrder = 0 AND IsFakeOrder = 0";
+   string currentQuery = "SELECT * FROM tbl_Hedge WHERE IsOpenedOrder = 1 AND IsDeletedOrder = 0 AND IsHedgedOrder = 0 AND IsFakeOrder = 0";
 
    string filename = "Hedgedb.sqlite";
 
@@ -899,9 +902,9 @@ void RemoveTPFromHedgeOrder()
    }
 
    int DatabaseReadCount = DatabaseRead(request);
-   for (int i = 0; i < DatabaseReadCount; i++)
+   for (int i = 0; DatabaseRead(request); i++)
    {
-      if (DatabaseColumnInteger(request, 0, orderTicket))
+      if (DatabaseColumnInteger(request,5, orderTicket))
       {
          trade.PositionModify(orderTicket, 0, 0);
       }
@@ -912,7 +915,10 @@ void RemoveTPFromHedgeOrder()
          DatabaseClose(db);
          return;
       }
+      Print("i = ",i,"DatabaseRead(request) :" ,DatabaseRead(request));
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
 }
+//+------------------------------------------------------------------+
