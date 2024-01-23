@@ -9,7 +9,7 @@
 #include <Trade/Customtrade.mqh>
 CustomCTrade trade;
 bool isFirstBuy = false;
-double tpDistance = 70;
+double tpDistance = 95;
 double orderDistance = 50;
 double orderVolume = 0.00001;
 int hedgeSize = 1;
@@ -299,6 +299,7 @@ bool IsOrderBuyStop(ulong positionId)
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return isOrderBuyStop == 1 ? true : false;
 }
 //+------------------------------------------------------------------+
@@ -343,6 +344,7 @@ bool IsOrderSellStop(ulong positionId)
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return isOrderSellStop == 1 ? true : false;
 }
 //+------------------------------------------------------------------+
@@ -387,6 +389,7 @@ int GetTicketOfOpenedPenddingStop(string pendingStopType)
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return -2;
 }
 //+------------------------------------------------------------------+
@@ -476,6 +479,7 @@ double GetLastOrderLevelPrice()
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return 0;
 }
 //+------------------------------------------------------------------+
@@ -520,6 +524,7 @@ int GetLastOrderLevel()
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return 0;
 }
 //+------------------------------------------------------------------+
@@ -564,6 +569,7 @@ double GetLastOrderLevelPriceByTicket(ulong ticket)
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return 0;
 }
 //+------------------------------------------------------------------+
@@ -608,6 +614,7 @@ int GetLastOrderLevelByTicket(ulong ticket)
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return 0;
 }
 //+------------------------------------------------------------------+
@@ -652,6 +659,7 @@ bool IsExistSameOrderInThisLevel(int level, string orderType)
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return isExistSameOrderInThisLevel == 1 ? true : false;
 }
 //+------------------------------------------------------------------+
@@ -696,6 +704,7 @@ bool IsExistFakeOrderStop()
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return isExistFakeOrderStop == 1 ? true : false;
 }
 //+------------------------------------------------------------------+
@@ -740,6 +749,7 @@ double GetFakeOrderStopLevelPrice(string orderType)
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return fakeOrderStopLevelPrice;
 }
 //+------------------------------------------------------------------+
@@ -784,6 +794,7 @@ int GetLastResetNo()
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return lastResetNo;
 }
 
@@ -873,6 +884,7 @@ bool IsExistConditionForHedge()
    }
 //--- remove the query after use
    DatabaseFinalize(request);
+   DatabaseClose(db);
    return isExistConditionForHedge == 1 ? true : false;
 }
 //+------------------------------------------------------------------+
@@ -881,7 +893,7 @@ bool IsExistConditionForHedge()
 void RemoveTPFromHedgeOrder()
 {
    int orderTicket = 0;
-   string currentQuery = "SELECT * FROM tbl_Hedge WHERE IsOpenedOrder = 1 AND IsDeletedOrder = 0 AND IsHedgedOrder = 0 AND IsFakeOrder = 0";
+   string currentQuery = "SELECT OrderTicket FROM tbl_Hedge WHERE IsOpenedOrder = 1 AND IsDeletedOrder = 0 AND IsHedgedOrder = 0 AND IsFakeOrder = 0";
 
    string filename = "Hedgedb.sqlite";
 
@@ -901,10 +913,9 @@ void RemoveTPFromHedgeOrder()
       return;
    }
 
-   int DatabaseReadCount = DatabaseRead(request);
    for (int i = 0; DatabaseRead(request); i++)
    {
-      if (DatabaseColumnInteger(request,5, orderTicket))
+      if (DatabaseColumnInteger(request,0, orderTicket))
       {
          trade.PositionModify(orderTicket, 0, 0);
       }
@@ -915,7 +926,6 @@ void RemoveTPFromHedgeOrder()
          DatabaseClose(db);
          return;
       }
-      Print("i = ",i,"DatabaseRead(request) :" ,DatabaseRead(request));
    }
 //--- remove the query after use
    DatabaseFinalize(request);
