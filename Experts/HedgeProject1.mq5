@@ -54,6 +54,8 @@ void OnTick()
       string query = "Update tbl_Hedge SET IsLastOrder = 0 WHERE IslastOrder = 1";
       DatabaseDataEntryQuery(query);
 
+
+
       query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1 AND OrderType LIKE '%ToSellFake'";
       DatabaseDataEntryQuery(query);
 
@@ -63,7 +65,9 @@ void OnTick()
               ",'BuyFakeStopToBuyFake',-1," + GetFakeOrderStopLevelPrice("BuyFakeStop") + ",0,true,false,true,false,true);";
       DatabaseDataEntryQuery(query);
 
-      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1 AND OrderType IN ('BuyFakeStop','SellFakeStop')";
+      trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
+      trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsDeletedOrder = 0 AND OrderType IN ('SellStop','BuyStop','BuyFakeStop','SellFakeStop')";
       DatabaseDataEntryQuery(query);
 
       MakePenddingOrder();
@@ -85,7 +89,9 @@ void OnTick()
               ",'SellFakeStopToSellFake',-1," + GetFakeOrderStopLevelPrice("SellFakeStop") + ",0,true,false,true,false,true);";
       DatabaseDataEntryQuery(query);
 
-      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1 AND OrderType IN ('BuyFakeStop','SellFakeStop')";
+      trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
+      trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsDeletedOrder = 0 AND OrderType IN ('SellStop','BuyStop','BuyFakeStop','SellFakeStop')";
       DatabaseDataEntryQuery(query);
 
       MakePenddingOrder();
@@ -332,6 +338,7 @@ bool IsOrderSellStop(ulong positionId)
    {
       if (DatabaseColumnInteger(request, 0, isOrderSellStop))
       {
+         DatabaseClose(db);
          return isOrderSellStop == 1 ? true : false;
       }
       else
@@ -377,6 +384,7 @@ int GetTicketOfOpenedPenddingStop(string pendingStopType)
    {
       if (DatabaseColumnInteger(request, 0, OrderTicket))
       {
+      DatabaseClose(db);
          return OrderTicket;
       }
       else
@@ -467,6 +475,7 @@ double GetLastOrderLevelPrice()
    {
       if (DatabaseColumnDouble(request, 0, LevelPrice))
       {
+      DatabaseClose(db);
          return LevelPrice;
       }
       else
@@ -512,6 +521,7 @@ int GetLastOrderLevel()
    {
       if (DatabaseColumnInteger(request, 0, Level))
       {
+      DatabaseClose(db);
          return Level;
       }
       else
@@ -557,6 +567,7 @@ double GetLastOrderLevelPriceByTicket(ulong ticket)
    {
       if (DatabaseColumnDouble(request, 0, LevelPrice))
       {
+      DatabaseClose(db);
          return LevelPrice;
       }
       else
@@ -602,6 +613,7 @@ int GetLastOrderLevelByTicket(ulong ticket)
    {
       if (DatabaseColumnInteger(request, 0, Level))
       {
+      DatabaseClose(db);
          return Level;
       }
       else
@@ -647,6 +659,7 @@ bool IsExistSameOrderInThisLevel(int level, string orderType)
    {
       if (DatabaseColumnInteger(request, 0, isExistSameOrderInThisLevel))
       {
+      DatabaseClose(db);
          return isExistSameOrderInThisLevel == 1 ? true : false;
       }
       else
@@ -692,6 +705,7 @@ bool IsExistFakeOrderStop()
    {
       if (DatabaseColumnInteger(request, 0, isExistFakeOrderStop))
       {
+      DatabaseClose(db);
          return isExistFakeOrderStop == 1 ? true : false;
       }
       else
@@ -737,6 +751,7 @@ double GetFakeOrderStopLevelPrice(string orderType)
    {
       if (DatabaseColumnDouble(request, 0, fakeOrderStopLevelPrice))
       {
+      DatabaseClose(db);
          return fakeOrderStopLevelPrice;
       }
       else
@@ -782,6 +797,7 @@ int GetLastResetNo()
    {
       if (DatabaseColumnInteger(request, 0, lastResetNo))
       {
+      DatabaseClose(db);
          return lastResetNo;
       }
       else
@@ -872,6 +888,7 @@ bool IsExistConditionForHedge()
    {
       if (DatabaseColumnInteger(request, 0, isExistConditionForHedge))
       {
+      DatabaseClose(db);
          return isExistConditionForHedge == 1 ? true : false;
       }
       else
