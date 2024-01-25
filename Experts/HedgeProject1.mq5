@@ -7,11 +7,19 @@
 #property link "https://www.mql5.com"
 #property version "1.00"
 #include <Trade/Customtrade.mqh>
+#include <Trade\OrderInfo.mqh>
+#include <Trade\PositionInfo.mqh>
+
 CustomCTrade trade;
+COrderInfo     order;
+CPositionInfo  position;
+
 bool isFirstBuy = false;
+double currentBalance;
 double tpDistance = 95;
 double orderDistance = 50;
-double orderVolume = 0.00001;
+double orderVolume = 0.1;
+double closePercent = 1;
 int hedgeSize = 1;
 ENUM_ORDER_TYPE_FILLING type_filling1 = ORDER_FILLING_FOK;
 int deviation1 = 0;
@@ -21,6 +29,7 @@ int deviation1 = 0;
 int OnInit()
 {
    CreateDatabaseAndTable();
+   currentBalance = AccountInfoDouble(ACCOUNT_BALANCE);
    return (INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
@@ -28,15 +37,29 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
-//---
+   CloseAllPositionAndOredr();
+
+   resetTrade();
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
 {
+   GetAccountInfo();
    double Ask = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK), _Digits);
    double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
+
+   if(currentBalance * (1 + closePercent / 100) <= AccountInfoDouble(ACCOUNT_BALANCE))
+   {
+
+      CloseAllPositionAndOredr();
+
+      resetTrade();
+
+      Comment ("new new ---------------------------------------------");
+   }
+
    if (IsMarketOpen() && !isFirstBuy && trade.Buy(orderVolume, Symbol(), Ask, 0, Ask + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), NULL, type_filling1))
    {
       isFirstBuy = true;
@@ -384,7 +407,7 @@ int GetTicketOfOpenedPenddingStop(string pendingStopType)
    {
       if (DatabaseColumnInteger(request, 0, OrderTicket))
       {
-      DatabaseClose(db);
+         DatabaseClose(db);
          return OrderTicket;
       }
       else
@@ -475,7 +498,7 @@ double GetLastOrderLevelPrice()
    {
       if (DatabaseColumnDouble(request, 0, LevelPrice))
       {
-      DatabaseClose(db);
+         DatabaseClose(db);
          return LevelPrice;
       }
       else
@@ -521,7 +544,7 @@ int GetLastOrderLevel()
    {
       if (DatabaseColumnInteger(request, 0, Level))
       {
-      DatabaseClose(db);
+         DatabaseClose(db);
          return Level;
       }
       else
@@ -567,7 +590,7 @@ double GetLastOrderLevelPriceByTicket(ulong ticket)
    {
       if (DatabaseColumnDouble(request, 0, LevelPrice))
       {
-      DatabaseClose(db);
+         DatabaseClose(db);
          return LevelPrice;
       }
       else
@@ -613,7 +636,7 @@ int GetLastOrderLevelByTicket(ulong ticket)
    {
       if (DatabaseColumnInteger(request, 0, Level))
       {
-      DatabaseClose(db);
+         DatabaseClose(db);
          return Level;
       }
       else
@@ -659,7 +682,7 @@ bool IsExistSameOrderInThisLevel(int level, string orderType)
    {
       if (DatabaseColumnInteger(request, 0, isExistSameOrderInThisLevel))
       {
-      DatabaseClose(db);
+         DatabaseClose(db);
          return isExistSameOrderInThisLevel == 1 ? true : false;
       }
       else
@@ -705,7 +728,7 @@ bool IsExistFakeOrderStop()
    {
       if (DatabaseColumnInteger(request, 0, isExistFakeOrderStop))
       {
-      DatabaseClose(db);
+         DatabaseClose(db);
          return isExistFakeOrderStop == 1 ? true : false;
       }
       else
@@ -751,7 +774,7 @@ double GetFakeOrderStopLevelPrice(string orderType)
    {
       if (DatabaseColumnDouble(request, 0, fakeOrderStopLevelPrice))
       {
-      DatabaseClose(db);
+         DatabaseClose(db);
          return fakeOrderStopLevelPrice;
       }
       else
@@ -797,7 +820,7 @@ int GetLastResetNo()
    {
       if (DatabaseColumnInteger(request, 0, lastResetNo))
       {
-      DatabaseClose(db);
+         DatabaseClose(db);
          return lastResetNo;
       }
       else
@@ -888,7 +911,7 @@ bool IsExistConditionForHedge()
    {
       if (DatabaseColumnInteger(request, 0, isExistConditionForHedge))
       {
-      DatabaseClose(db);
+         DatabaseClose(db);
          return isExistConditionForHedge == 1 ? true : false;
       }
       else
@@ -948,4 +971,70 @@ void RemoveTPFromHedgeOrder()
    DatabaseFinalize(request);
    DatabaseClose(db);
 }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void GetAccountInfo()
+{
+   printf("ACCOUNT_BALANCE = %G",AccountInfoDouble(ACCOUNT_BALANCE));
+   printf("ACCOUNT_CREDIT = %G",AccountInfoDouble(ACCOUNT_CREDIT));
+   printf("ACCOUNT_PROFIT = %G",AccountInfoDouble(ACCOUNT_PROFIT));
+   printf("ACCOUNT_EQUITY = %G",AccountInfoDouble(ACCOUNT_EQUITY));
+   printf("ACCOUNT_MARGIN = %G",AccountInfoDouble(ACCOUNT_MARGIN));
+   printf("ACCOUNT_MARGIN_FREE = %G",AccountInfoDouble(ACCOUNT_MARGIN_FREE));
+   printf("ACCOUNT_MARGIN_LEVEL = %G",AccountInfoDouble(ACCOUNT_MARGIN_LEVEL));
+   printf("ACCOUNT_MARGIN_SO_CALL = %G",AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL));
+   printf("ACCOUNT_MARGIN_SO_SO = %G",AccountInfoDouble(ACCOUNT_MARGIN_SO_SO));
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void CloseAllPositionAndOredr()
+{
+
+   for(int i = PositionsTotal() - 1; i >= 0; i--) // loop all Open Positions
+      if(position.SelectByIndex(i))  // select a position
+      {
+         trade.PositionClose(position.Ticket()); // then close it --period
+         Sleep(100); // Relax for 100 ms
+      }
+
+
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+      if(order.SelectByIndex(i))
+      {
+         trade.OrderDelete(order.Ticket());
+         Sleep(100);
+      }
+
+
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      if(position.SelectByIndex(i) && (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
+      {
+         trade.PositionClose(position.Ticket());
+         trade.PositionModify(position.Ticket(), 0, SymbolInfoDouble(_Symbol, SYMBOL_ASK) + 1 * SymbolInfoDouble(_Symbol, SYMBOL_POINT));
+         Sleep(100);
+      }
+      if(position.SelectByIndex(i) && (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
+      {
+         trade.PositionClose(position.Ticket());
+         trade.PositionModify(position.Ticket(), 0, SymbolInfoDouble(_Symbol, SYMBOL_BID) - 1 * SymbolInfoDouble(_Symbol, SYMBOL_POINT));
+         Sleep(100);
+      }
+   }
+
+   string query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsDeletedOrder = 0";
+   DatabaseDataEntryQuery(query);
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void resetTrade()
+{
+   isFirstBuy = false;
+   currentBalance = AccountInfoDouble(ACCOUNT_BALANCE);
+}
+
 //+------------------------------------------------------------------+
