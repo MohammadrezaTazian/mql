@@ -20,7 +20,7 @@ double tpDistance = 95;
 double orderDistance = 50;
 double orderVolume = 0.1;
 double closePercent = 1;
-int hedgeSize = 1;
+int hedgeSize = 100;
 ENUM_ORDER_TYPE_FILLING type_filling1 = ORDER_FILLING_FOK;
 int deviation1 = 0;
 //+------------------------------------------------------------------+
@@ -852,8 +852,9 @@ void MakePenddingOrder()
    }
    else
    {
-      while(!trade.BuyStop(orderVolume, GetLastOrderLevelPrice() + (orderDistance + epsilon) * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1))
+      while(!trade.BuyStop(orderVolume, GetLastOrderLevelPrice() + (orderDistance + epsilon) * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() + (orderDistance + epsilon) * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1))
       {
+         Print("SymbolInfoDouble(Symbol(), SYMBOL_ASK)",SymbolInfoDouble(Symbol(), SYMBOL_ASK) );
          epsilon ++;
       }
    }
@@ -868,7 +869,7 @@ void MakePenddingOrder()
    else
    {
       epsilon = 0;
-      while(!trade.SellStop(orderVolume, GetLastOrderLevelPrice() - (orderDistance + epsilon) * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1, deviation1))
+      while(!trade.SellStop(orderVolume, GetLastOrderLevelPrice() - (orderDistance + epsilon) * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(), 0, GetLastOrderLevelPrice() - (orderDistance + epsilon) * SymbolInfoDouble(Symbol(), SYMBOL_POINT) - tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), 0, 0, NULL, type_filling1, deviation1))
       {
          epsilon ++;
       }
@@ -883,10 +884,12 @@ bool IsExistConditionForHedge()
    string currentQuery = "SELECT "
                          "CASE "
                          "WHEN "
-                         " (SELECT COUNT(*) FROM tbl_Hedge WHERE OrderType IN ('Buy','BuyStopToBuy') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) = " + hedgeSize + ""
-                         " AND (SELECT COUNT(*) FROM tbl_Hedge WHERE OrderType IN ('Sell','SellStopToSell') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) = " + hedgeSize + " THEN 1"
-                         " ELSE 0"
-                         " END AS IsExistConditionForHedge";
+                         "(SELECT COUNT(*) FROM tbl_Hedge WHERE OrderType IN ('Buy','BuyStopToBuy') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) >= " + hedgeSize + " "
+                         "AND (SELECT COUNT(*) FROM tbl_Hedge WHERE OrderType IN ('Sell','SellStopToSell') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) >= " + hedgeSize + " "
+                         "AND (SELECT COUNT(*) FROM tbl_Hedge WHERE OrderType IN ('Buy','BuyStopToBuy') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) = (SELECT COUNT(*) FROM tbl_Hedge WHERE OrderType IN ('Sell','SellStopToSell') AND IsHedgedOrder = 0 AND IsDeletedOrder = 0) "
+                         "THEN 1 "
+                         "ELSE 0 "
+                         "END AS IsExistConditionForHedge";
 
    string filename = "Hedgedb.sqlite";
 
@@ -1024,7 +1027,7 @@ void CloseAllPositionAndOredr()
       }
    }
 
-   string query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsDeletedOrder = 0";
+   string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
    DatabaseDataEntryQuery(query);
 }
 
