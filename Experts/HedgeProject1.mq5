@@ -10,7 +10,7 @@
 #include <Trade\OrderInfo.mqh>
 #include <Trade\PositionInfo.mqh>
 
-CustomCTrade trade;
+CustomCTrade   trade;
 COrderInfo     order;
 CPositionInfo  position;
 
@@ -66,6 +66,7 @@ void OnTick()
    {
       isFirstBuy = true;
    }
+
    if(IsExistConditionForHedge())
    {
       RemoveTPFromHedgeOrder();
@@ -79,8 +80,6 @@ void OnTick()
       string query = "Update tbl_Hedge SET IsLastOrder = 0 WHERE IslastOrder = 1";
       DatabaseDataEntryQuery(query);
 
-
-
       query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsFakeOrder = 1 AND OrderType LIKE '%ToSellFake'";
       DatabaseDataEntryQuery(query);
 
@@ -92,13 +91,13 @@ void OnTick()
 
       trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
       trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+
       query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsDeletedOrder = 0 AND OrderType IN ('SellStop','BuyStop','BuyFakeStop','SellFakeStop')";
       DatabaseDataEntryQuery(query);
 
       MakePenddingOrder();
    }
    if (GetFakeOrderStopLevelPrice("SellFakeStop") != 0 && Bid <= GetFakeOrderStopLevelPrice("SellFakeStop"))
-
    {
       int lastLevel = GetLastOrderLevel();
 
@@ -116,6 +115,7 @@ void OnTick()
 
       trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
       trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+
       query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsDeletedOrder = 0 AND OrderType IN ('SellStop','BuyStop','BuyFakeStop','SellFakeStop')";
       DatabaseDataEntryQuery(query);
 
@@ -162,17 +162,6 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
       }
 
       MakePenddingOrder();
-      if(DeleteAllBuyOrder)
-      {
-         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
-         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
-
-         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
-         DatabaseDataEntryQuery(query);
-
-         DeleteAllBuyOrder = false;
-      }
-
    }
 
    if (trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order == trans.position)
@@ -206,7 +195,28 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
       }
 
       MakePenddingOrder();
+   }
 
+   if (trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position) // end buy
+   {
+      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
+      DatabaseDataEntryQuery(query);
+      if(DeleteAllBuyOrder)
+      {
+         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
+         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+
+         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
+         DatabaseDataEntryQuery(query);
+
+         DeleteAllBuyOrder = false;
+      }
+   }
+
+   if (trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order != trans.position) // end sell
+   {
+      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
+      DatabaseDataEntryQuery(query);
       if(DeleteAllSellOrder)
       {
          trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
@@ -218,18 +228,6 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
          DeleteAllSellOrder = false;
       }
    }
-
-   if (trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_SELL && trans.order != trans.position) // end buy
-   {
-      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
-      DatabaseDataEntryQuery(query);
-   }
-
-   if (trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order != trans.position) // end sell
-   {
-      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
-      DatabaseDataEntryQuery(query);
-   }
    Print("trans.type,trans.order_type = ",trans.type," ",trans.order_type," ",TRADE_TRANSACTION_ORDER_ADD," ",ORDER_TYPE_BUY_STOP," ",trans.position );
    if (trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_STOP)
    {
@@ -237,16 +235,38 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
               "VALUES (" +
               (GetLastOrderLevel() + 1) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + GetLastResetNo() + ",'BuyStop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",false,false,false,false,false);";
       DatabaseDataEntryQuery(query);
+
+      if(DeleteAllBuyOrder)
+      {
+         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
+         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+
+         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
+         DatabaseDataEntryQuery(query);
+
+         DeleteAllBuyOrder = false;
+      }
+
+
    }
 
    if (trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_STOP)
    {
-      if (GetLastOrderLevel() - 1 == -5 )
-         Print (-12);
       query = "INSERT INTO tbl_Hedge (Level,LevelPrice,ResetNo,OrderType,OrderTicket,OpenedOrderPrice,OrderTP,IsOpenedOrder,IsHedgedOrder,IsFakeOrder,IsDeletedOrder,IsLastOrder)"
               "VALUES (" +
               (GetLastOrderLevel() - 1) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + GetLastResetNo() + ",'SellStop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",false,false,false,false,false);";
       DatabaseDataEntryQuery(query);
+
+      if(DeleteAllSellOrder)
+      {
+         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
+         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+
+         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
+         DatabaseDataEntryQuery(query);
+
+         DeleteAllSellOrder = false;
+      }
    }
 }
 //+------------------------------------------------------------------+
