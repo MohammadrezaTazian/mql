@@ -8,7 +8,9 @@
 #property version   "1.00"
 #include<Trade/Customtrade.mqh>
 CustomCTrade trade;
+COrderInfo     order;
 bool doesHaveOrder = false;
+int i1 = 0;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -35,24 +37,26 @@ void OnTick()
 //---
    if(doesHaveOrder == false)
    {
+
       double Ask = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK),_Digits);
-      double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID),_Digits);
-      trade.SetTypeFilling(ORDER_FILLING_RETURN);
+      //double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID),_Digits);
+      // trade.SetTypeFilling(ORDER_FILLING_RETURN);
       //trade.Buy(0.1, Symbol(), Ask,0,Ask + 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
-      Print("trade.RequestTypeFillingDescription():",trade.RequestTypeFillingDescription());
-      Print("SymbolInfoInteger(symbol,SYMBOL_FILLING_MODE):",SymbolInfoInteger(Symbol(),SYMBOL_FILLING_MODE));
+      //Print("trade.RequestTypeFillingDescription():",trade.RequestTypeFillingDescription());
+      //Print("SymbolInfoInteger(symbol,SYMBOL_FILLING_MODE):",SymbolInfoInteger(Symbol(),SYMBOL_FILLING_MODE));
       //trade.Sell(0.1, Symbol(), Bid,0,Bid - 70 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),"test");
       trade.BuyStop(
          0.1,
-         Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),
+         Ask + 1600 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),
          0,
-         Ask + 1 * SymbolInfoDouble(Symbol(), SYMBOL_POINT) + 1 * SymbolInfoDouble(Symbol(),
-               SYMBOL_POINT),
+         0,
          0,
          0,
          "test",
          ORDER_FILLING_BOC
       );
+
+
       //trade.SellStop(
       //   0.1,
       //   Bid - 50 * SymbolInfoDouble(Symbol(), SYMBOL_POINT),
@@ -68,6 +72,19 @@ void OnTick()
       doesHaveOrder = true;
    }
 
+   i1++;
+   if(i1 > 1)
+   {
+      for(int i = OrdersTotal() - 1; i >= 0; i--)
+         if(order.SelectByIndex(i))
+         {
+
+            bool d = trade.OrderDelete(order.Ticket());
+
+            Sleep(100);
+         }
+   }
+
 }
 //+------------------------------------------------------------------+
 //| Trade function                                                   |
@@ -81,9 +98,9 @@ void OnTrade()
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void OnTradeTransaction1(const MqlTradeTransaction& trans,
-                         const MqlTradeRequest& request,
-                         const MqlTradeResult& result)
+void OnTradeTransaction(const MqlTradeTransaction& trans,
+                        const MqlTradeRequest& request,
+                        const MqlTradeResult& result)
 {
    doesHaveOrder = true;
 //   Print(
@@ -242,6 +259,10 @@ void OnTradeTransaction1(const MqlTradeTransaction& trans,
    else if(trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_SELL_STOP)
    {
       Print("SELL_STOP"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
+   }
+   else if(trans.type == TRADE_TRANSACTION_ORDER_DELETE && trans.order_type == ORDER_TYPE_BUY_STOP)
+   {
+      Print ("deleteddd......................");
    }
 }
 //+------------------------------------------------------------------+

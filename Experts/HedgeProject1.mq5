@@ -48,18 +48,22 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
+   if(IsThereId(103))
+   {
+      Print("ID IS OK");
+   }
+
+   if(!IsThereAnyOpenOrder() && OrdersTotal() == 0 && PositionsTotal() == 0)
+   {
+      resetTrade();
+   }
    GetAccountInfo();
    double Ask = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK), _Digits);
    double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
 
-   if(currentBalance * (1 + closePercent / 100) <= AccountInfoDouble(ACCOUNT_BALANCE))
+   if(GetNormalStatus() && currentBalance * (1 + closePercent / 100) <= AccountInfoDouble(ACCOUNT_BALANCE))
    {
-
       CloseAllPositionAndOredr();
-
-      resetTrade();
-
-      Comment ("new new ---------------------------------------------");
    }
 
    if (IsMarketOpen() && !isFirstBuy && trade.Buy(orderVolume, Symbol(), Ask, 0, Ask + tpDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT), NULL, type_filling1))
@@ -92,7 +96,7 @@ void OnTick()
       trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
       trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
 
-      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsDeletedOrder = 0 AND OrderType IN ('SellStop','BuyStop','BuyFakeStop','SellFakeStop')";
+      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsDeletedOrder = 0 AND OrderType IN ('BuyFakeStop','SellFakeStop')";
       DatabaseDataEntryQuery(query);
 
       MakePenddingOrder();
@@ -116,7 +120,7 @@ void OnTick()
       trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
       trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
 
-      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsDeletedOrder = 0 AND OrderType IN ('SellStop','BuyStop','BuyFakeStop','SellFakeStop')";
+      query = "Update tbl_Hedge SET IsDeletedOrder = 1 WHERE IsDeletedOrder = 0 AND OrderType IN ('BuyFakeStop','SellFakeStop')";
       DatabaseDataEntryQuery(query);
 
       MakePenddingOrder();
@@ -136,7 +140,7 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
       if (IsOrderBuyStop(trans.position))
       {
          trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
-         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType IN ('SellStop','SellFakeStop')";
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType IN ('SellFakeStop')";
          DatabaseDataEntryQuery(query);
 
          query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
@@ -169,7 +173,7 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
       if (IsOrderSellStop(trans.position))
       {
          trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
-         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType IN ('BuyStop','BuyFakeStop')";
+         query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderType IN ('BuyFakeStop')";
          DatabaseDataEntryQuery(query);
 
          query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
@@ -201,32 +205,32 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
    {
       query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
       DatabaseDataEntryQuery(query);
-      if(DeleteAllBuyOrder)
-      {
-         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
-         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
-
-         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
-         DatabaseDataEntryQuery(query);
-
-         DeleteAllBuyOrder = false;
-      }
+//      if(DeleteAllBuyOrder)
+//      {
+//         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
+//         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+//
+//         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
+//         DatabaseDataEntryQuery(query);
+//
+//         DeleteAllBuyOrder = false;
+//      }
    }
 
    if (trans.type == TRADE_TRANSACTION_DEAL_ADD && trans.deal_type == DEAL_TYPE_BUY && trans.order != trans.position) // end sell
    {
       query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.position);
       DatabaseDataEntryQuery(query);
-      if(DeleteAllSellOrder)
-      {
-         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
-         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
-
-         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
-         DatabaseDataEntryQuery(query);
-
-         DeleteAllSellOrder = false;
-      }
+//      if(DeleteAllSellOrder)
+//      {
+//         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
+//         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+//
+//         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
+//         DatabaseDataEntryQuery(query);
+//
+//         DeleteAllSellOrder = false;
+//      }
    }
    Print("trans.type,trans.order_type = ",trans.type," ",trans.order_type," ",TRADE_TRANSACTION_ORDER_ADD," ",ORDER_TYPE_BUY_STOP," ",trans.position );
    if (trans.type == TRADE_TRANSACTION_ORDER_ADD && trans.order_type == ORDER_TYPE_BUY_STOP)
@@ -236,16 +240,16 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
               (GetLastOrderLevel() + 1) + "," + (GetLastOrderLevelPrice() + orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + GetLastResetNo() + ",'BuyStop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",false,false,false,false,false);";
       DatabaseDataEntryQuery(query);
 
-      if(DeleteAllBuyOrder)
-      {
-         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
-         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
-
-         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
-         DatabaseDataEntryQuery(query);
-
-         DeleteAllBuyOrder = false;
-      }
+//      if(DeleteAllBuyOrder)
+//      {
+//         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
+//         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+//
+//         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
+//         DatabaseDataEntryQuery(query);
+//
+//         DeleteAllBuyOrder = false;
+//      }
 
 
    }
@@ -257,16 +261,26 @@ void OnTradeTransaction(const MqlTradeTransaction &trans,
               (GetLastOrderLevel() - 1) + "," + (GetLastOrderLevelPrice() - orderDistance * SymbolInfoDouble(Symbol(), SYMBOL_POINT)) + "," + GetLastResetNo() + ",'SellStop'," + IntegerToString(trans.order) + "," + DoubleToString(trans.price) + "," + DoubleToString(trans.price_tp) + ",false,false,false,false,false);";
       DatabaseDataEntryQuery(query);
 
-      if(DeleteAllSellOrder)
-      {
-         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
-         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
-
-         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
-         DatabaseDataEntryQuery(query);
-
-         DeleteAllSellOrder = false;
-      }
+//      if(DeleteAllSellOrder)
+//      {
+//         trade.OrderDelete(GetTicketOfOpenedPenddingStop("SellStop"));
+//         trade.OrderDelete(GetTicketOfOpenedPenddingStop("BuyStop"));
+//
+//         string query = "Update tbl_Hedge SET IsDeletedOrder = 1, IsLastOrder = 0 WHERE IsDeletedOrder = 0";
+//         DatabaseDataEntryQuery(query);
+//
+//         DeleteAllSellOrder = false;
+//      }
+   }
+   if(trans.type == TRADE_TRANSACTION_ORDER_DELETE && trans.order_type == ORDER_TYPE_BUY_STOP)
+   {
+      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.order);
+      DatabaseDataEntryQuery(query);
+   }
+   if(trans.type == TRADE_TRANSACTION_ORDER_DELETE && trans.order_type == ORDER_TYPE_SELL_STOP)
+   {
+      query = "update tbl_Hedge set IsDeletedOrder = 1 WHERE OrderTicket = " + IntegerToString(trans.order);
+      DatabaseDataEntryQuery(query);
    }
 }
 //+------------------------------------------------------------------+
@@ -591,8 +605,6 @@ int GetLastOrderLevel()
       if (DatabaseColumnInteger(request, 0, Level))
       {
          DatabaseClose(db);
-         if(Level == -12)
-            Print("level = -12");
          return Level;
       }
       else
@@ -1043,18 +1055,21 @@ void GetAccountInfo()
 void CloseAllPositionAndOredr()
 {
 
-   for(int i = PositionsTotal() - 1; i >= 0; i--) // loop all Open Positions
-      if(position.SelectByIndex(i))  // select a position
-      {
-         trade.PositionClose(position.Ticket()); // then close it --period
-         Sleep(100); // Relax for 100 ms
-      }
+//for(int i = PositionsTotal() - 1; i >= 0; i--) // loop all Open Positions
+//   if(position.SelectByIndex(i))  // select a position
+//   {
+//      trade.PositionClose(position.Ticket()); // then close it --period
+//      Sleep(100); // Relax for 100 ms
+//   }
 
 
    for(int i = OrdersTotal() - 1; i >= 0; i--)
       if(order.SelectByIndex(i))
       {
-         trade.OrderDelete(order.Ticket());
+         while(!trade.OrderDelete(order.Ticket()))
+         {
+            trade.OrderDelete(order.Ticket());
+         }
          Sleep(100);
       }
 
@@ -1063,13 +1078,13 @@ void CloseAllPositionAndOredr()
    {
       if(position.SelectByIndex(i) && (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
       {
-         trade.PositionClose(position.Ticket());
+         //trade.PositionClose(position.Ticket());
          trade.PositionModify(position.Ticket(), 0, SymbolInfoDouble(_Symbol, SYMBOL_ASK) + 1 * SymbolInfoDouble(_Symbol, SYMBOL_POINT));
          Sleep(100);
       }
       if(position.SelectByIndex(i) && (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
       {
-         trade.PositionClose(position.Ticket());
+         //trade.PositionClose(position.Ticket());
          trade.PositionModify(position.Ticket(), 0, SymbolInfoDouble(_Symbol, SYMBOL_BID) - 1 * SymbolInfoDouble(_Symbol, SYMBOL_POINT));
          Sleep(100);
       }
@@ -1088,4 +1103,144 @@ void resetTrade()
    currentBalance = AccountInfoDouble(ACCOUNT_BALANCE);
 }
 
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool GetNormalStatus()
+{
+   int isNormalStatus = 0;
+   string currentQuery = "SELECT CASE WHEN EXISTS(SELECT 1 FROM tbl_Hedge WHERE OrderType IN ('BuyStop', 'BuyFakeStop') AND IsDeletedOrder = 0) AND  EXISTS(SELECT 1 FROM tbl_Hedge WHERE OrderType IN ('SellStop', 'SellFakeStop') AND IsDeletedOrder = 0) THEN 1 ELSE 0  END As IsNormalStatus";
+   string filename = "Hedgedb.sqlite";
+
+//--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if (db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return false;
+   }
+//--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if (request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return false;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for (int i = 0; i < DatabaseReadCount; i++)
+   {
+      if (DatabaseColumnInteger(request, 0, isNormalStatus))
+      {
+         DatabaseClose(db);
+         return isNormalStatus == 0 ? false : true;
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return false;
+      }
+   }
+//--- remove the query after use
+   DatabaseFinalize(request);
+   DatabaseClose(db);
+   return isNormalStatus == 0 ? false : true;
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool IsThereId(int id)
+{
+   int isThereId = 0;
+   string currentQuery = "SELECT CASE WHEN  EXISTS (SELECT 1 FROM tbl_Hedge WHERE ID = " + id + ") THEN 1 ELSE 0 END IsThereID";
+   string filename = "Hedgedb.sqlite";
+
+//--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if (db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return false;
+   }
+//--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if (request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return false;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for (int i = 0; i < DatabaseReadCount; i++)
+   {
+      if (DatabaseColumnInteger(request, 0, isThereId))
+      {
+         DatabaseClose(db);
+         return isThereId == 0 ? false : true;
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return false;
+      }
+   }
+//--- remove the query after use
+   DatabaseFinalize(request);
+   DatabaseClose(db);
+   return isThereId == 0 ? false : true;
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool IsThereAnyOpenOrder()
+{
+   int isThereAnyOpenOrder = 0;
+   string currentQuery = "SELECT CASE WHEN EXISTS (SELECT 1 FROM tbl_Hedge WHERE IsDeletedOrder = 0) THEN 1 ELSE 0 END AS IsThereAnyOpenOrder";
+   string filename = "Hedgedb.sqlite";
+
+//--- create or open the database in the common terminal folder
+   int db = DatabaseOpen(filename, DATABASE_OPEN_READWRITE | DATABASE_OPEN_CREATE | DATABASE_OPEN_COMMON);
+   if (db == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " open failed with code ", GetLastError());
+      return false;
+   }
+//--- create a query and get a handle for it
+   int request = DatabasePrepare(db, currentQuery);
+   if (request == INVALID_HANDLE)
+   {
+      Print("DB: ", filename, " request failed with code ", GetLastError());
+      DatabaseClose(db);
+      return false;
+   }
+
+   int DatabaseReadCount = DatabaseRead(request);
+   for (int i = 0; i < DatabaseReadCount; i++)
+   {
+      if (DatabaseColumnInteger(request, 0, isThereAnyOpenOrder))
+      {
+         DatabaseClose(db);
+         return isThereAnyOpenOrder == 0 ? false : true;
+      }
+      else
+      {
+         Print(i, ": DatabaseRead() failed with code ", GetLastError());
+         DatabaseFinalize(request);
+         DatabaseClose(db);
+         return false;
+      }
+   }
+//--- remove the query after use
+   DatabaseFinalize(request);
+   DatabaseClose(db);
+   return isThereAnyOpenOrder == 0 ? false : true;
+}
 //+------------------------------------------------------------------+
