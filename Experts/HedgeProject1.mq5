@@ -1109,7 +1109,7 @@ void resetTrade()
 bool GetNormalStatus()
 {
    int isNormalStatus = 0;
-   string currentQuery = "SELECT CASE WHEN EXISTS(SELECT 1 FROM tbl_Hedge WHERE OrderType IN ('BuyStop', 'BuyFakeStop') AND IsDeletedOrder = 0) AND  EXISTS(SELECT 1 FROM tbl_Hedge WHERE OrderType IN ('SellStop', 'SellFakeStop') AND IsDeletedOrder = 0) THEN 1 ELSE 0  END As IsNormalStatus";
+   string currentQuery = "SELECT CASE WHEN EXISTS( SELECT 1 FROM (SELECT H.ID,H.ResetNo FROM tbl_Hedge H WHERE H.OrderType IN ('Buy','BuyStopToBuy','BuyFakeStopToBuyFake','Sell','SellStopToBuy','SellFakeStopToSellFake') ORDER BY H.ID DESC LIMIT 1)R1 CROSS JOIN (SELECT H.ID,H.ResetNo FROM tbl_Hedge H WHERE H.OrderType IN ('BuyStop','BuyFakeStop') AND H.IsDeletedOrder = 0 ORDER BY H.ID DESC LIMIT 1)R2 CROSS JOIN (SELECT H.ID,H.ResetNo FROM tbl_Hedge H WHERE H.OrderType IN ('SellStop','SellFakeStop') AND H.IsDeletedOrder = 0 ORDER BY H.ID DESC LIMIT 1)R3 WHERE R1.ResetNo = R2.ResetNo AND R1.ResetNo = R3.ResetNo AND (R1.ID - R2.ID <= 1) AND (R1.ID - R3.ID <= 2) ) THEN 1 ELSE 0 END";
    string filename = "Hedgedb.sqlite";
 
 //--- create or open the database in the common terminal folder
