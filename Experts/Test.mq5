@@ -56,6 +56,16 @@ void OnTick()
          ORDER_FILLING_BOC
       );
 
+      trade.BuyStop(
+         0.1,
+         Ask + 0.5 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), Symbol(),
+         0,
+         0,
+         0,
+         0,
+         "test",
+         ORDER_FILLING_BOC
+      );
 
       //trade.SellStop(
       //   0.1,
@@ -73,7 +83,7 @@ void OnTick()
    }
 
    i1++;
-   if(i1 > 1)
+   if(i1 > 1000000)
    {
       for(int i = OrdersTotal() - 1; i >= 0; i--)
          if(order.SelectByIndex(i))
@@ -166,65 +176,65 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
 //      " ORDER_TIME_SPECIFIED_DAY:",ORDER_TIME_SPECIFIED_DAY
 //   );
 //
-   Print(
-      " SYMBOL_FILLING_FOK:",SYMBOL_FILLING_FOK,
-      " SYMBOL_FILLING_IOC:",SYMBOL_FILLING_IOC,
-      " SYMBOL_FILLING_MODE:",SYMBOL_FILLING_MODE
-   );
-   Print(
-      " ORDER_FILLING_FOK:",ORDER_FILLING_FOK,
-      " ORDER_FILLING_IOC:",ORDER_FILLING_IOC,
-      " ORDER_FILLING_BOC:",ORDER_FILLING_BOC,
-      " ORDER_FILLING_RETURN:",ORDER_FILLING_RETURN
-   );
-   Print(
-      " trans.type:",trans.type,
-      " trans.deal:",trans.deal,
-      " trans.deal_type:",trans.deal_type,
-      " trans.order:",trans.order,
-      " trans.order_state:",trans.order_state,
-      " trans.order_type:",trans.order_type,
-      " trans.position:",trans.position,
-      " trans.position_by:",trans.position_by,
-      " trans.price:",trans.price,
-      " trans.price_sl:",trans.price_sl,
-      " trans.price_tp:",trans.price_tp,
-      " trans.price_trigger:",trans.price_trigger,
-      " trans.symbol:",trans.symbol,
-      " trans.time_expiratio:",trans.time_expiration,
-      " trans.time_type:",trans.time_type,
-      " trans.volume:",trans.volume
-   );
-   Print(
-      " request.action:",request.action,
-      " request.comment,:",request.comment,
-      " request.deviation:",request.deviation,
-      " request.expiration:",request.expiration,
-      " request.magic:",request.magic,
-      " request.order:",request.order,
-      " request.position:",request.position,
-      " request.position_by:",request.position_by,
-      " request.price:",request.price,
-      " request.sl:",request.sl,
-      " request.tp:",request.tp,
-      " request.type:",request.type,
-      " request.stoplimit:",request.stoplimit,
-      " request.type_filling:",request.type_filling,
-      " request.type_time:",request.type_time,
-      " request.volume:",request.volume
-   );
-   Print(
-      " result.ask:",result.ask,
-      " result.bid:",result.bid,
-      " result.comment:",result.comment,
-      " result.deal:",result.deal,
-      " result.order:",result.order,
-      " result.price:",result.price,
-      " result.request_id:",result.request_id,
-      " result.retcode:",result.retcode,
-      " result.retcode_external:",result.retcode_external,
-      " result.volume:",result.volume
-   );
+   //Print(
+   //   " SYMBOL_FILLING_FOK:",SYMBOL_FILLING_FOK,
+   //   " SYMBOL_FILLING_IOC:",SYMBOL_FILLING_IOC,
+   //   " SYMBOL_FILLING_MODE:",SYMBOL_FILLING_MODE
+   //);
+   //Print(
+   //   " ORDER_FILLING_FOK:",ORDER_FILLING_FOK,
+   //   " ORDER_FILLING_IOC:",ORDER_FILLING_IOC,
+   //   " ORDER_FILLING_BOC:",ORDER_FILLING_BOC,
+   //   " ORDER_FILLING_RETURN:",ORDER_FILLING_RETURN
+   //);
+   //Print(
+   //   " trans.type:",trans.type,
+   //   " trans.deal:",trans.deal,
+   //   " trans.deal_type:",trans.deal_type,
+   //   " trans.order:",trans.order,
+   //   " trans.order_state:",trans.order_state,
+   //   " trans.order_type:",trans.order_type,
+   //   " trans.position:",trans.position,
+   //   " trans.position_by:",trans.position_by,
+   //   " trans.price:",trans.price,
+   //   " trans.price_sl:",trans.price_sl,
+   //   " trans.price_tp:",trans.price_tp,
+   //   " trans.price_trigger:",trans.price_trigger,
+   //   " trans.symbol:",trans.symbol,
+   //   " trans.time_expiratio:",trans.time_expiration,
+   //   " trans.time_type:",trans.time_type,
+   //   " trans.volume:",trans.volume
+   //);
+   //Print(
+   //   " request.action:",request.action,
+   //   " request.comment,:",request.comment,
+   //   " request.deviation:",request.deviation,
+   //   " request.expiration:",request.expiration,
+   //   " request.magic:",request.magic,
+   //   " request.order:",request.order,
+   //   " request.position:",request.position,
+   //   " request.position_by:",request.position_by,
+   //   " request.price:",request.price,
+   //   " request.sl:",request.sl,
+   //   " request.tp:",request.tp,
+   //   " request.type:",request.type,
+   //   " request.stoplimit:",request.stoplimit,
+   //   " request.type_filling:",request.type_filling,
+   //   " request.type_time:",request.type_time,
+   //   " request.volume:",request.volume
+   //);
+   //Print(
+   //   " result.ask:",result.ask,
+   //   " result.bid:",result.bid,
+   //   " result.comment:",result.comment,
+   //   " result.deal:",result.deal,
+   //   " result.order:",result.order,
+   //   " result.price:",result.price,
+   //   " result.request_id:",result.request_id,
+   //   " result.retcode:",result.retcode,
+   //   " result.retcode_external:",result.retcode_external,
+   //   " result.volume:",result.volume
+   //);
    Print( "(uint)SymbolInfoInteger(symbol,SYMBOL_FILLING_MODE):",SymbolInfoInteger(Symbol(),SYMBOL_FILLING_MODE));
    Print(" OrderSelect(trans.position):",OrderSelect(trans.position)," OrderGetInteger(ORDER_TYPE):",OrderGetInteger(ORDER_TYPE));
 
@@ -260,7 +270,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
    {
       Print("SELL_STOP"," trans.order:",trans.order," trans.price:",trans.price," trans.price_tp:",trans.price_tp);
    }
-   else if(trans.type == TRADE_TRANSACTION_ORDER_DELETE && trans.order_type == ORDER_TYPE_BUY_STOP)
+   else if(trans.type == TRADE_TRANSACTION_ORDER_DELETE && trans.order_type == ORDER_TYPE_BUY_STOP && trans.order_state == ORDER_STATE_CANCELED)
    {
       Print ("deleteddd......................");
    }
