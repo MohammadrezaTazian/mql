@@ -16,8 +16,8 @@ CPositionInfo  position;
 
 bool isFirstBuy = false;
 double currentBalance;
-double tpDistance = 95;
-double orderDistance = 50;
+double tpDistance = 30;
+double orderDistance = 20;
 double orderVolume = 0.1;
 double closePercent = 1;
 int hedgeSize = 100;
@@ -61,7 +61,7 @@ void OnTick()
    double Ask = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK), _Digits);
    double Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID), _Digits);
 
-   if(currentBalance * (1 + closePercent / 100) <= AccountInfoDouble(ACCOUNT_BALANCE) && PositionsTotal() == 0 && GetNormalStatus())
+   if(currentBalance * (1 + closePercent / 100) <= AccountInfoDouble(ACCOUNT_BALANCE) && GetNormalStatus())
    {
       CloseAllPositionAndOredr();
    }
@@ -890,6 +890,11 @@ void MakePenddingOrder()
          epsilon ++;
       }
    }
+   if(DeleteAllBuyOrder)
+   {
+      DeleteExtraOrder();
+      DeleteAllBuyOrder = false;
+   }
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -1025,7 +1030,7 @@ void CloseAllPositionAndOredr()
       {
          while(!trade.OrderDelete(order.Ticket()))
          {
-            trade.OrderDelete(order.Ticket());
+            Sleep(20);
          }
          Sleep(100);
       }
@@ -1056,7 +1061,47 @@ void CloseAllPositionAndOredr()
    DeleteAllBuyOrder = true;
    DeleteAllSellOrder = true;
 }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void DeleteExtraOrder ()
+{
+   string query = "UPDATE tbl_Hedge SET IsDeletedOrder = 1,IsLastOrder = 0 WHERE IsDeletedOrder = 0 AND OrderType IN ('BuyFakeStopToBuyFake','SellFakeStopToSellFake','BuyFakeStop','SellFakeStop') ";
+   DatabaseDataEntryQuery(query);
 
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+      if(order.SelectByIndex(i))
+      {
+         while(!trade.OrderDelete(order.Ticket()))
+         {
+            Sleep(20);
+         }
+         Sleep(100);
+      }
+
+
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      if(position.SelectByIndex(i) && (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
+      {
+         while(!trade.PositionClose(position.Ticket()))
+         {
+            Sleep(20);
+         }
+         //trade.PositionModify(position.Ticket(), 0, SymbolInfoDouble(_Symbol, SYMBOL_ASK) + 1 * SymbolInfoDouble(_Symbol, SYMBOL_POINT));
+         Sleep(100);
+      }
+      if(position.SelectByIndex(i) && (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
+      {
+         while(!trade.PositionClose(position.Ticket()))
+         {
+            Sleep(20);
+         }
+         //trade.PositionModify(position.Ticket(), 0, SymbolInfoDouble(_Symbol, SYMBOL_BID) - 1 * SymbolInfoDouble(_Symbol, SYMBOL_POINT));
+         Sleep(100);
+      }
+   }
+}
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
