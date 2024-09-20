@@ -61,7 +61,6 @@ void OnTick()
 //+------------------------------------------------------------------+
 void OnTrade()
 {
-//---
 
 }
 //+------------------------------------------------------------------+
@@ -71,7 +70,52 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
                         const MqlTradeRequest& request,
                         const MqlTradeResult& result)
 {
-//---
+
+   if(
+      trans.type == TRADE_TRANSACTION_DEAL_ADD
+      && trans.deal_type == DEAL_TYPE_BUY
+      && trans.order_state == ORDER_STATE_STARTED
+      && trans.order_type == ORDER_TYPE_BUY
+      && trans.position == trans.order
+   )
+   {
+      Print ("A buy position started..");
+   }
+
+   if(
+      trans.type == TRADE_TRANSACTION_DEAL_ADD
+      && trans.deal_type == DEAL_TYPE_SELL
+      && trans.order_state == ORDER_STATE_STARTED
+      && trans.order_type == ORDER_TYPE_BUY
+      && trans.position != trans.order
+   )
+   {
+      Print ("A buy position arrived at SL ...");
+      haveOpenedOrder = false;
+   }
+
+   if(
+      trans.type == TRADE_TRANSACTION_DEAL_ADD
+      && trans.deal_type == DEAL_TYPE_SELL
+      && trans.order_state == ORDER_STATE_STARTED
+      && trans.order_type == ORDER_TYPE_SELL
+      && trans.position == trans.order
+   )
+   {
+      Print ("A Sell position started ...");
+   }
+
+   if(
+      trans.type == TRADE_TRANSACTION_DEAL_ADD
+      && trans.deal_type == DEAL_TYPE_BUY
+      && trans.order_state == ORDER_STATE_STARTED
+      && trans.order_type == ORDER_TYPE_SELL
+      && trans.position != trans.order
+   )
+   {
+      Print ("A sell position arrived at SL ...");
+       haveOpenedOrder = false;
+   }
 
 }
 //+------------------------------------------------------------------+
@@ -87,7 +131,7 @@ bool IsPinbar(double open,double close,double high,double low)
       && close - low > 4 * (open - close)
    )
    {
-   Print("open > close");
+      Print("open > close");
       return true;
    }
    if(
